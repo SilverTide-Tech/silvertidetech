@@ -1,0 +1,133 @@
+---
+/**
+ * Business page (architecture §5, Business template): hero · why this business · offerings ·
+ * roadmap (optional) · CTA. One page per business entry, including planned verticals (§1.3).
+ */
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/layout/PageHero.astro';
+import SectionHeading from '../../components/ui/SectionHeading.astro';
+import StatusBadge from '../../components/ui/StatusBadge.astro';
+import Button from '../../components/ui/Button.astro';
+import ProductCard from '../../components/cards/ProductCard.astro';
+import ServiceGrid from '../../components/cards/ServiceGrid.astro';
+import RoadmapTimeline from '../../components/cards/RoadmapTimeline.astro';
+import CtaBand from '../../components/cards/CtaBand.astro';
+import { EDUCATION_AMBITION } from '../../lib/company';
+import { LAUNCHED_STATUSES, STATUS_META } from '../../lib/status';
+
+export async function getStaticPaths() {
+  const businesses = await getCollection('businesses');
+  return businesses.map((business) => ({ params: { slug: business.id }, props: { business } }));
+}
+
+const { business } = Astro.props;
+const { Content } = await render(business);
+const b = business.data;
+const status = b.status === 'active' ? undefined : b.status;
+
+const [products, services, roadmap] = await Promise.all([
+  getCollection('products', ({ data }) => data.business.id === business.id),
+  getCollection('services', ({ data }) => data.business.id === business.id),
+  getCollection('roadmap', ({ data }) => data.business.id === business.id),
+]);
+
+const productCards = products
+  .sort((a, c) => STATUS_META[a.data.status].order - STATUS_META[c.data.status].order || a.data.order - c.data.order)
+  .map((p) => ({
+    name: p.data.name,
+    category: p.data.category,
+    tagline: p.data.tagline,
+    status: p.data.status,
+    capabilities: p.data.capabilities.map((c) => c.title),
+    href: LAUNCHED_STATUSES.includes(p.data.status) ? `/products/${p.id}` : undefined,
+  }));
+const serviceItems = services.sort((a, c) => a.data.order - c.data.order).map((s) => ({ id: s.id, name: s.data.name, summary: s.data.summary }));
+const steps = roadmap
+  .sort((a, c) => a.data.phase - c.data.phase)
+  .map((r) => ({ phase: r.data.phase, title: r.data.title, description: r.data.description, status: r.data.status }));
+
+const launched = products.find((p) => p.data.externalUrl && LAUNCHED_STATUSES.includes(p.data.status));
+---
+
+<BaseLayout title={b.name} description={b.purpose}>
+  <PageHero
+    eyebrow={status ? 'Business · Planned vertical' : 'Business'}
+    title={b.name}
+    intro={b.purpose}
+    breadcrumbs={[
+      { label: 'Home', href: '/' },
+      { label: 'Businesses', href: '/businesses' },
+      { label: b.navName ?? b.name, href: `/businesses/${business.id}` },
+    ]}
+  >
+    {status && <StatusBadge status={status} />}
+    {launched && <Button href={launched.data.externalUrl} variant="accent" tone="dark" external>Visit {launched.data.name}</Button>}
+  </PageHero>
+
+  <section aria-labelledby="why-title" class="py-16 lg:py-24">
+    <div class="container-site grid gap-6 lg:grid-cols-[1fr_1.4fr] lg:gap-16" data-reveal>
+      <SectionHeading id="why-title" eyebrow="Why this business" title={status ? 'What we plan to offer' : 'Why we build here'} />
+      <div class="grid gap-5 text-lead [&_p]:text-ink-600"><Content /></div>
+    </div>
+  </section>
+
+  {
+    productCards.length > 0 && (
+      <section aria-labelledby="products-title" class="bg-mist py-16 lg:py-24">
+        <div class="container-site" data-reveal>
+          <SectionHeading id="products-title" eyebrow="Products" title={`Products in ${b.name}`} />
+          <div class="mt-10 grid gap-6 md:grid-cols-2">
+            {productCards.map((card) => <ProductCard {...card} />)}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    serviceItems.length > 0 && (
+      <section aria-labelledby="services-title" class="bg-mist py-16 lg:py-24">
+        <div class="container-site" data-reveal>
+          <SectionHeading
+            id="services-title"
+            eyebrow="Planned offerings"
+            title="Services we plan to offer"
+            intro="These services are not launched yet. This page will be updated when they are."
+          />
+          <div class="mt-10"><ServiceGrid services={serviceItems} /></div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    steps.length > 0 && (
+      <section aria-labelledby="roadmap-title" class="py-16 lg:py-24">
+        <div class="container-site" data-reveal>
+          <SectionHeading id="roadmap-title" eyebrow="Roadmap" title="Where this business is heading" intro={`Our long-term ambition: ${EDUCATION_AMBITION.charAt(0).toLowerCase()}${EDUCATION_AMBITION.slice(1)}`} />
+          <div class="mt-12"><RoadmapTimeline steps={steps} /></div>
+        </div>
+      </section>
+    )
+  }
+
+  <section aria-label="Next step" class:list={['pb-16 lg:pb-24', steps.length === 0 && 'pt-16 lg:pt-24']}>
+    <div class="container-site" data-reveal>
+      {
+        launched ? (
+          <CtaBand
+            title={`Try ${launched.data.name}`}
+            text={launched.data.tagline}
+            href={launched.data.externalUrl!}
+            label={`Visit ${launched.data.name}`}
+            variant="accent"
+            external
+          />
+        ) : (
+          <CtaBand title="Have a question about Silver Tide Tech?" text="We’re happy to hear from you." href="/contact" label="Contact us" />
+        )
+      }
+    </div>
+  </section>
+</BaseLayout>

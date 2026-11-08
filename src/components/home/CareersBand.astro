@@ -1,0 +1,19 @@
+---
+/** Home §8 Careers: a one-paragraph invitation (architecture §3). */
+import TideStroke from '../ui/TideStroke.astro';
+import Button from '../ui/Button.astro';
+---
+
+<section aria-labelledby="careers-title" class="bg-mist py-20 lg:py-24">
+  <div class="container-site grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end" data-reveal>
+    <div class="grid max-w-2xl gap-3.5">
+      <p class="eyebrow text-teal-700">Careers</p>
+      <TideStroke />
+      <h2 id="careers-title" class="text-h2 font-bold">Build with us</h2>
+      <p class="text-lead">
+        We’re building for the long term, and we’re always glad to hear from people who want to build with us.
+      </p>
+    </div>
+    <Button href="/careers" variant="secondary" arrow class="justify-self-start lg:justify-self-end">Explore careers</Button>
+  </div>
+</section>

@@ -1,0 +1,14 @@
+---
+/** Home §7 Founders & Directors: five uniform cards, names only (company-vision §6). */
+import SectionHeading from '../ui/SectionHeading.astro';
+import TextLink from '../ui/TextLink.astro';
+import FounderGrid from '../cards/FounderGrid.astro';
+---
+
+<section aria-labelledby="founders-title" class="py-20 lg:py-28">
+  <div class="container-site" data-reveal>
+    <SectionHeading id="founders-title" eyebrow="Leadership" title="Founders & Directors" intro="The people building Silver Tide Tech." />
+    <FounderGrid class="mt-12" />
+    <p class="mt-10"><TextLink href="/leadership">Meet the team</TextLink></p>
+  </div>
+</section>

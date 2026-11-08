@@ -1,0 +1,38 @@
+---
+/** Closing call-to-action band, reusable at the end of any page (architecture §5). */
+import Button from '../ui/Button.astro';
+import TideStroke from '../ui/TideStroke.astro';
+
+interface Props {
+  title: string;
+  text?: string;
+  href: string;
+  label: string;
+  id?: string;
+  external?: boolean;
+  variant?: 'primary' | 'accent';
+}
+
+const { title, text, href, label, id, external = false, variant = 'primary' } = Astro.props;
+
+const contour = Array.from({ length: 7 }, (_, i) => {
+  const y = 30 + i * 30;
+  let d = '';
+  for (let x = 0; x <= 1200; x += 20) d += `${x === 0 ? 'M' : 'L'}${x} ${(y + 7 * Math.sin(((x + i * 60) / 260) * Math.PI * 2)).toFixed(1)}`;
+  return d;
+});
+---
+
+<div class="relative isolate overflow-hidden rounded-[20px] border border-teal-50 bg-teal-50 px-6 py-12 sm:px-12 sm:py-14">
+  <svg class="absolute inset-0 -z-10 h-full w-full" viewBox="0 0 1200 240" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    {contour.map((d) => <path d={d} fill="none" stroke="#0B7C77" stroke-opacity="0.08" stroke-width="1.3" vector-effect="non-scaling-stroke" />)}
+  </svg>
+  <div class="flex flex-col items-start gap-6 lg:flex-row lg:items-center lg:justify-between">
+    <div class="grid max-w-2xl gap-3">
+      <TideStroke />
+      <h2 id={id} class="text-h2 font-bold">{title}</h2>
+      {text && <p class="text-lead text-ink-700">{text}</p>}
+    </div>
+    <Button href={href} variant={variant} external={external} arrow={!external}>{label}</Button>
+  </div>
+</div>

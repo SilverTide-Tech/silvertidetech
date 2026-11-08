@@ -1,0 +1,115 @@
+---
+/**
+ * Friendly 3D robot mascot (public/ask-bot.webp) that opens the "Ask Silver Tide" assistant.
+ * It keeps itself lively: every few seconds it picks an action (wave hello, dance, hop, spin,
+ * look around, get excited), throws sparkles and shows a speech bubble inviting a question.
+ * It turns to face the cursor, pulses its antenna light while the AI is thinking and hops when
+ * an answer arrives. Once the visitor has used the assistant it calms down.
+ * Reduced motion: no animation at all, only a single static greeting bubble.
+ */
+---
+
+<button type="button" class="sbot" data-ask-bot data-ask-open aria-haspopup="dialog" aria-label="Ask Silver Tide, AI assistant">
+  <span class="sbot-bubble" data-bubble-text aria-hidden="true">Hi! Ask me anything about Silver Tide.</span>
+  <span class="sbot-float">
+    <span class="sbot-tilt">
+      <img class="sbot-img" src="/ask-bot.webp" width="280" height="371" alt="" decoding="async" draggable="false" />
+      <span class="sbot-bulb" aria-hidden="true"></span>
+    </span>
+  </span>
+  <span class="sbot-spark" aria-hidden="true"></span>
+  <span class="sbot-spark" aria-hidden="true"></span>
+  <span class="sbot-spark" aria-hidden="true"></span>
+  <span class="sbot-ground" aria-hidden="true"></span>
+</button>
+
+<script>
+  const bot = document.querySelector<HTMLElement>('[data-ask-bot]');
+  if (bot) {
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const fine = matchMedia('(pointer: fine)').matches;
+    const bubble = bot.querySelector<HTMLElement>('[data-bubble-text]')!;
+    const sparks = [...bot.querySelectorAll<HTMLElement>('.sbot-spark')];
+    const dlg = document.querySelector<HTMLElement>('[data-ask]');
+    let stateTimer = 0, hideTimer = 0, loopTimer = 0, last = '';
+
+    const setState = (s: string, ms = 0) => {
+      bot.dataset.state = s; clearTimeout(stateTimer);
+      if (ms) stateTimer = window.setTimeout(() => { bot.dataset.state = 'idle'; }, ms);
+    };
+    const say = (text: string, ms: number) => {
+      bubble.textContent = text; bot.setAttribute('data-bubble', '');
+      clearTimeout(hideTimer); hideTimer = window.setTimeout(() => bot.removeAttribute('data-bubble'), ms);
+    };
+    const used = () => { try { return !!sessionStorage.getItem('st-bot-used'); } catch { return false; } };
+
+    // The robot turns to face the pointer
+    if (!reduce && fine) {
+      let raf = 0;
+      addEventListener('pointermove', (e) => {
+        if (raf) return;
+        raf = requestAnimationFrame(() => {
+          raf = 0;
+          const r = bot.getBoundingClientRect();
+          const dx = e.clientX - (r.left + r.width / 2);
+          const dy = e.clientY - (r.top + r.height / 2);
+          const d = Math.hypot(dx, dy) || 1;
+          const k = Math.min(1, d / 400);
+          const nx = (dx / d) * k, ny = (dy / d) * k;
+          bot.style.setProperty('--tx', (nx * 5).toFixed(1));
+          bot.style.setProperty('--ty', (ny * 3).toFixed(1));
+          bot.style.setProperty('--ry', `${(nx * 18).toFixed(1)}deg`);
+          bot.style.setProperty('--rx', `${(-ny * 12).toFixed(1)}deg`);
+        });
+      }, { passive: true });
+    }
+
+    // Reacts to the assistant: thinking while a request is running, happy when it answers
+    if (dlg) {
+      new MutationObserver(() => {
+        if (dlg.querySelector('[aria-busy="true"]')) setState('thinking');
+        else if (bot.dataset.state === 'thinking') setState('happy', 1800);
+      }).observe(dlg, { subtree: true, attributes: true, attributeFilter: ['aria-busy'] });
+      dlg.addEventListener('close', () => setState('idle'));
+    }
+    bot.addEventListener('click', () => {
+      try { sessionStorage.setItem('st-bot-used', '1'); } catch { /* storage unavailable */ }
+      bot.removeAttribute('data-bubble'); delete bot.dataset.act; setState('wave', 1200);
+    });
+    bot.addEventListener('pointerenter', () => { if (!bot.hasAttribute('data-bubble')) say('Hi! Click me and ask anything.', 3500); });
+
+    if (reduce) {
+      // No motion: one static greeting
+      setTimeout(() => say('Hi! Ask me anything about Silver Tide.', 8000), 1500);
+    } else {
+      // Keeps itself lively: a random action every few seconds, each with a bubble and sparkles
+      const acts = [
+        { name: 'wave', ms: 2400, msg: 'Hi! 👋 Ask me anything.', fx: ['✦', '✧', '✦'] },
+        { name: 'dance', ms: 3200, msg: 'Ask me about Silver Tide! ♪', fx: ['♪', '♫', '♪'] },
+        { name: 'hop', ms: 1500, msg: 'Psst… need help? Just ask!', fx: ['✦', '✦', '✧'] },
+        { name: 'spin', ms: 1500, msg: 'Try asking about SarasTech.', fx: ['★', '✦', '★'] },
+        { name: 'peek', ms: 2400, msg: 'Looking for something? Ask me!', fx: ['?', '✦', '?'] },
+        { name: 'excite', ms: 1800, msg: 'I can explain this page for you!', fx: ['!', '✦', '!'] },
+      ];
+      const schedule = () => {
+        clearTimeout(loopTimer);
+        const [lo, hi] = used() ? [28000, 45000] : [6500, 11000]; // calmer once the visitor has used it
+        loopTimer = window.setTimeout(run, lo + Math.random() * (hi - lo));
+      };
+      const run = () => {
+        const busyNow = document.hidden || (dlg as HTMLDialogElement | null)?.open || ['thinking', 'happy'].includes(bot.dataset.state ?? '');
+        if (!busyNow) {
+          const pool = acts.filter((a) => a.name !== last);
+          const a = pool[Math.floor(Math.random() * pool.length)];
+          last = a.name;
+          sparks.forEach((s, i) => { s.textContent = a.fx[i]; });
+          bot.dataset.act = a.name;
+          say(a.msg, a.ms + 2800);
+          setTimeout(() => { if (bot.dataset.act === a.name) delete bot.dataset.act; }, a.ms);
+        }
+        schedule();
+      };
+      setTimeout(run, 1500);
+    }
+  }
+</script>

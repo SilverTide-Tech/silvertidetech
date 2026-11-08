@@ -1,0 +1,25 @@
+---
+/** Home §2 What We Build: the business ecosystem, generated from content (architecture §3). */
+import SectionHeading from '../ui/SectionHeading.astro';
+import Ecosystem from './Ecosystem.astro';
+import BusinessCard from '../cards/BusinessCard.astro';
+import { getBusinessCards } from '../../lib/businesses';
+
+const cards = await getBusinessCards({ homeOnly: true });
+---
+
+<section aria-labelledby="build-title" class="py-20 lg:py-28">
+  <div class="container-site" data-reveal>
+    <SectionHeading
+      id="build-title"
+      eyebrow="What we build"
+      title="Our businesses"
+      intro="Our businesses start with a real problem and grow into products people rely on."
+    />
+    <div class="mt-12"><Ecosystem /></div>
+    <div class="mt-6 grid gap-6 md:grid-cols-2 lg:mt-8">
+      {cards.map(({ order: _order, ...card }) => <BusinessCard {...card} />)}
+    </div>
+    <p class="mt-8 text-[0.9375rem] text-ink-500">More businesses as we grow.</p>
+  </div>
+</section>

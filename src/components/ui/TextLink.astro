@@ -1,0 +1,29 @@
+---
+/** Inline / "Learn more" link with tide-stroke underline (brand-direction §7). */
+interface Props {
+  href: string;
+  external?: boolean;
+  arrow?: boolean;
+  class?: string;
+}
+
+const { href, external = false, arrow = true, class: className } = Astro.props;
+---
+
+<a
+  href={href}
+  class:list={['tide-link', className]}
+  target={external ? '_blank' : undefined}
+  rel={external ? 'noopener noreferrer' : undefined}
+>
+  <slot />
+  {arrow && !external && <span aria-hidden="true">→</span>}
+  {
+    external && (
+      <>
+        <span aria-hidden="true">↗</span>
+        <span class="sr-only">(opens in a new tab)</span>
+      </>
+    )
+  }
+</a>

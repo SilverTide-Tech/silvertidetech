@@ -1,0 +1,31 @@
+---
+/** Home page: section order follows docs/strategy/website-architecture.md §3. */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HeroSection from '../components/home/HeroSection.astro';
+import WhatWeBuild from '../components/home/WhatWeBuild.astro';
+import FeaturedProduct from '../components/home/FeaturedProduct.astro';
+import VisionMission from '../components/home/VisionMission.astro';
+import EducationRoadmap from '../components/home/EducationRoadmap.astro';
+import TechnologyServices from '../components/home/TechnologyServices.astro';
+import FoundersSection from '../components/home/FoundersSection.astro';
+import FounderNote from '../components/cards/FounderNote.astro';
+import CareersBand from '../components/home/CareersBand.astro';
+import ContactCta from '../components/home/ContactCta.astro';
+import { organizationSchema, websiteSchema } from '../lib/seo';
+import { getCollection } from 'astro:content';
+
+const founders = (await getCollection('people')).sort((a, b) => a.data.order - b.data.order).map((p) => p.data.name);
+---
+
+<BaseLayout structuredData={[organizationSchema(Astro.site, founders), websiteSchema(Astro.site)]}>
+  <HeroSection />
+  <WhatWeBuild />
+  <FeaturedProduct />
+  <VisionMission />
+  <EducationRoadmap />
+  <TechnologyServices />
+  <FoundersSection />
+  <FounderNote />
+  <CareersBand />
+  <ContactCta />
+</BaseLayout>

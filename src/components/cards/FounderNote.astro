@@ -1,0 +1,52 @@
+---
+/**
+ * "A note from the founders": preview of the joint note from the Founders & Directors, shown on the
+ * home and Leadership pages. Supplied excerpt, the five portraits and a link to the full note, which
+ * opens in a new tab (owner's decision). Renders nothing while the note is a draft.
+ */
+import { getFoundersNote, FOUNDERS_NOTE_PATH } from '../../lib/founders-note';
+import { listNames } from '../../lib/notes';
+import TideStroke from '../ui/TideStroke.astro';
+import TextLink from '../ui/TextLink.astro';
+import FounderPortraits from './FounderPortraits.astro';
+
+const note = await getFoundersNote();
+const names = note ? listNames(note.authors.map((a) => a.data.name)) : '';
+---
+
+{
+  note && (
+    <section aria-labelledby="founders-note-title" class="bg-navy-900 py-20 lg:py-28" data-tone="dark">
+      <div class="container-site grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16" data-reveal>
+        <div class="grid content-start gap-3.5">
+          <TideStroke tone="dark" />
+          <h2 id="founders-note-title" class="text-h2 font-bold text-white">
+            {note.title}
+          </h2>
+        </div>
+        <div>
+          <figure>
+            <span aria-hidden="true" class="block h-10 font-display text-[4.5rem] leading-none font-extrabold text-teal-500 select-none">
+              “
+            </span>
+            <blockquote class="max-w-[38ch] font-display text-[clamp(1.25rem,1.05rem+0.9vw,1.75rem)] leading-[1.45] font-semibold tracking-[-0.01em] text-white">
+              <p>{note.excerpt}</p>
+            </blockquote>
+            <figcaption class="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+              <FounderPortraits people={note.authors} tone="dark" />
+              <span class="text-sm text-silver-300">
+                <span class="block font-semibold text-white">{names}</span>
+                Founders &amp; Directors, Silver Tide Tech
+              </span>
+            </figcaption>
+          </figure>
+          <p class="mt-8">
+            <TextLink href={FOUNDERS_NOTE_PATH} external>
+              Read the full note
+            </TextLink>
+          </p>
+        </div>
+      </div>
+    </section>
+  )
+}

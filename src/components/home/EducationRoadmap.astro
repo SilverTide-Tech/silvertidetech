@@ -1,0 +1,26 @@
+---
+/** Home §5 Education Ecosystem Roadmap: current vs planned, honestly labelled (architecture §3). */
+import { getCollection } from 'astro:content';
+import SectionHeading from '../ui/SectionHeading.astro';
+import TextLink from '../ui/TextLink.astro';
+import RoadmapTimeline from '../cards/RoadmapTimeline.astro';
+
+const steps = (await getCollection('roadmap', ({ data }) => data.business.id === 'education'))
+  .sort((a, b) => a.data.phase - b.data.phase)
+  .map((r) => ({ phase: r.data.phase, title: r.data.title, description: r.data.description, status: r.data.status }));
+---
+
+<section aria-labelledby="roadmap-title" class="py-20 lg:py-28">
+  <div class="container-site" data-reveal>
+    <SectionHeading
+      id="roadmap-title"
+      eyebrow="Education ecosystem roadmap"
+      title="Where our education work is heading"
+      intro="Today, SarasTech supports teachers. Over time, we plan to connect AI, human teachers, personalised mentorship and physical classrooms into one integrated education ecosystem."
+    />
+    <div class="mt-12">
+      <RoadmapTimeline steps={steps} />
+    </div>
+    <p class="mt-10"><TextLink href="/vision">See our vision and roadmap</TextLink></p>
+  </div>
+</section>

@@ -1,0 +1,83 @@
+---
+/**
+ * Button / link-button (brand-direction §7).
+ * Variants: primary (navy), accent (teal), secondary (outline). `tone` adapts colours for dark sections.
+ */
+type Variant = 'primary' | 'accent' | 'secondary';
+
+interface Props {
+  href?: string;
+  variant?: Variant;
+  tone?: 'light' | 'dark';
+  size?: 'md' | 'sm';
+  external?: boolean;
+  arrow?: boolean;
+  type?: 'button' | 'submit';
+  class?: string;
+}
+
+const {
+  href,
+  variant = 'primary',
+  tone = 'light',
+  size = 'md',
+  external = false,
+  arrow = false,
+  type = 'button',
+  class: className,
+} = Astro.props;
+
+const variants: Record<'light' | 'dark', Record<Variant, string>> = {
+  light: {
+    primary: 'border-transparent bg-navy-900 text-white hover:bg-navy-800',
+    accent: 'border-transparent bg-teal-700 text-white hover:bg-teal-800',
+    secondary: 'border-silver-300 text-navy-900 hover:border-navy-900',
+  },
+  dark: {
+    primary: 'border-transparent bg-white text-navy-900 hover:bg-silver-100',
+    accent: 'border-transparent bg-teal-500 text-navy-900 hover:bg-teal-300',
+    secondary: 'border-navy-700 text-white hover:border-silver-300',
+  },
+};
+
+const classes = [
+  'group inline-flex items-center justify-center gap-2.5 rounded-[var(--radius-btn)] border font-semibold whitespace-nowrap no-underline',
+  'transition-colors duration-200 ease-[var(--ease-tide)]',
+  size === 'md' ? 'h-12 px-[22px] text-[0.9375rem]' : 'h-10 px-4 text-sm',
+  variants[tone][variant],
+  className,
+];
+---
+
+{
+  href ? (
+    <a
+      href={href}
+      data-magnetic={size === 'md' ? '' : undefined}
+      class:list={classes}
+      target={external ? '_blank' : undefined}
+      rel={external ? 'noopener noreferrer' : undefined}
+    >
+      <slot />
+      {arrow && (
+        <span
+          aria-hidden="true"
+          class="transition-transform duration-[250ms] ease-[var(--ease-tide-out)] group-hover:translate-x-[3px]"
+        >
+          →
+        </span>
+      )}
+      {external && (
+        <>
+          <span aria-hidden="true">↗</span>
+          <span class="sr-only">(opens in a new tab)</span>
+        </>
+      )}
+    </a>
+  ) : (
+    <button type={type} class:list={classes}>
+      <slot />
+      {arrow && <span aria-hidden="true">→</span>}
+    </button>
+  )
+}

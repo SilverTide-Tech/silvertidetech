@@ -1,0 +1,80 @@
+---
+/**
+ * Global footer (architecture §2.2). Business and product columns are generated from content.
+ * Social links are intentionally absent until the founders provide them.
+ */
+import Logo from '../brand/Logo.astro';
+import { getNavigation } from '../../lib/navigation';
+import { COMPANY_LINKS, LEGAL_LINKS, PRIMARY_LINKS, SITE } from '../../lib/site';
+import { STATUS_META } from '../../lib/status';
+
+const nav = await getNavigation();
+const year = new Date().getFullYear();
+
+const columns = [
+  {
+    title: 'Businesses',
+    links: nav.businesses.items.map((i) => ({
+      label: i.name,
+      href: i.href,
+      note: i.status && i.status !== 'available-now' ? STATUS_META[i.status].label : undefined,
+    })),
+  },
+  {
+    title: 'Products',
+    links: nav.products.items.map((i) => ({
+      label: i.name,
+      href: i.href,
+      note: i.status && i.status !== 'available-now' ? STATUS_META[i.status].label : undefined,
+    })),
+  },
+  { title: 'Company', links: COMPANY_LINKS },
+  { title: 'Connect', links: [PRIMARY_LINKS.contact] },
+] as Array<{ title: string; links: Array<{ label: string; href: string; note?: string }> }>;
+---
+
+<footer data-spot class="aurora grain spot relative overflow-hidden text-silver-300" data-tone="dark">
+  <div class="h-px w-full bg-gradient-to-r from-transparent via-teal-500 to-transparent" aria-hidden="true"></div>
+  <div class="container-site pt-16 pb-8 md:pt-[4.5rem]">
+    <div class="grid gap-10 md:grid-cols-[1.5fr_repeat(4,1fr)] md:gap-8">
+      <div>
+        <Logo tone="dark" />
+        <p class="text-metal mt-4 max-w-[16rem] font-display text-[1.25rem] leading-snug font-bold">{SITE.tagline}</p>
+      </div>
+      {
+        columns.map((col) => (
+          <div>
+            <h2 class="eyebrow mb-3 text-silver-500">{col.title}</h2>
+            <ul class="grid gap-0.5">
+              {col.links.map((link) => (
+                <li>
+                  <a href={link.href} class="inline-flex min-h-11 items-center text-[0.9375rem] text-silver-300 transition-[color,transform] duration-300 hover:translate-x-1 hover:text-white md:min-h-9">
+                    <span>
+                      {link.label}
+                      {link.note && <span class="text-[0.8125rem] whitespace-nowrap text-silver-500"> · {link.note}</span>}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="mt-14 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-navy-700 pt-6 text-[0.8125rem] text-silver-500">
+      <p>© {year} {SITE.name}</p>
+      <ul class="flex flex-wrap gap-x-6 gap-y-2">
+        {
+          LEGAL_LINKS.map((link) => (
+            <li>
+              <a href={link.href} class="inline-flex min-h-11 items-center hover:text-white md:min-h-6">
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,57 @@
+---
+/**
+ * Silver Tide Tech logo (official artwork; masters in /brand-source, derived by `npm run assets`).
+ * - light: the full-colour logo, for white/light surfaces.
+ * - dark:  the ST app-icon mark beside the name in white, for navy surfaces (the full logo's navy
+ *          wordmark would not be legible there).
+ */
+import { Image } from 'astro:assets';
+import logo from '../../assets/brand/logo.png';
+import mark from '../../assets/brand/mark.png';
+import { SITE } from '../../lib/site';
+
+interface Props {
+  tone?: 'light' | 'dark';
+  size?: 'sm' | 'md' | 'lg';
+  href?: string | null;
+  /** Load eagerly when the logo is above the fold (header). */
+  eager?: boolean;
+  class?: string;
+}
+
+const { tone = 'light', size = 'md', href = '/', eager = false, class: className } = Astro.props;
+
+const ratio = logo.width / logo.height;
+// Rendered heights (px) of the full logo; the dark lockup uses a mark of similar visual weight.
+const heights = { sm: 30, md: 40, lg: 64 } as const;
+const h = heights[size];
+const sizeClass = {
+  sm: 'h-[30px]',
+  md: 'h-[34px] sm:h-10',
+  lg: 'h-12 sm:h-16',
+}[size];
+const markClass = { sm: 'h-7 w-7', md: 'h-8 w-8', lg: 'h-12 w-12' }[size];
+const textClass = { sm: 'text-[0.9375rem]', md: 'text-[1.125rem]', lg: 'text-[1.625rem]' }[size];
+const Tag = href ? 'a' : 'span';
+---
+
+<Tag href={href ?? undefined} class:list={['inline-flex shrink-0 items-center gap-2.5 whitespace-nowrap no-underline', className]}>
+  {
+    tone === 'light' ? (
+      <Image
+        src={logo}
+        alt={SITE.name}
+        width={Math.round(h * ratio)}
+        height={h}
+        densities={[1, 2]}
+        loading={eager ? 'eager' : 'lazy'}
+        class:list={['w-auto', sizeClass]}
+      />
+    ) : (
+      <>
+        <Image src={mark} alt="" width={48} height={48} densities={[1, 2]} loading={eager ? 'eager' : 'lazy'} class:list={[markClass, 'rounded-[24%]']} />
+        <span class:list={['font-display leading-none font-extrabold tracking-[-0.02em] text-white', textClass]}>{SITE.name}</span>
+      </>
+    )
+  }
+</Tag>

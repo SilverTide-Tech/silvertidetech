@@ -1,0 +1,99 @@
+---
+/**
+ * Ctrl/⌘+K command palette. Entries come from the real navigation data plus the site's existing pages,
+ * so it can never list something that does not exist. Native <dialog>: focus trap and Esc come free.
+ */
+import { getNavigation } from '../../lib/navigation';
+import { STATUS_META } from '../../lib/status';
+
+const nav = await getNavigation();
+// `keys` are extra search words so natural phrases like "take me to the founders" or "jobs" find the right page.
+const pages = [
+  { name: 'Home', href: '/', keys: 'home start main' },
+  { name: 'About', href: '/about', keys: 'company who we are story' },
+  { name: 'Vision', href: '/vision', keys: 'mission future roadmap goals' },
+  { name: 'Leadership', href: '/leadership', keys: 'founders team people directors leaders' },
+  { name: 'Careers', href: '/careers', keys: 'jobs hiring work internship apply openings' },
+  { name: 'Contact', href: '/contact', keys: 'email reach talk phone support' },
+  { name: 'Foundation', href: '/foundation', keys: '' },
+  { name: 'Privacy', href: '/privacy', keys: 'data policy' },
+  { name: 'Terms', href: '/terms', keys: 'legal conditions' },
+];
+const groups = [
+  { label: 'Pages', items: pages.map((p) => ({ name: p.name, href: p.href, note: '', keys: p.keys })) },
+  { label: nav.businesses.label, items: [{ name: nav.businesses.allLabel, href: nav.businesses.href, note: '' }, ...nav.businesses.items.map((i) => ({ name: i.name, href: i.href, note: i.status ? STATUS_META[i.status].label : '' }))] },
+  { label: nav.products.label, items: [{ name: nav.products.allLabel, href: nav.products.href, note: '' }, ...nav.products.items.map((i) => ({ name: i.name, href: i.href, note: i.status ? STATUS_META[i.status].label : '' }))] },
+];
+---
+
+<button type="button" class="palette-trigger" data-palette-open aria-haspopup="dialog">
+  <span>Quick search</span><kbd>Ctrl K</kbd>
+</button>
+
+<dialog class="palette" aria-label="Quick navigation" data-palette data-lenis-prevent>
+  <div class="palette-box">
+    <input type="text" class="palette-input" placeholder="Jump to a page, business or product…" aria-label="Search pages" autocomplete="off" data-palette-input />
+    <div class="palette-list" data-palette-list>
+      {
+        groups.map((g) => (
+          <div data-group>
+            <p class="palette-group">{g.label}</p>
+            <ul>
+              {g.items.map((i) => (
+                <li>
+                  <a href={i.href} data-item data-text={`${i.name} ${g.label} ${'keys' in i ? i.keys : ''}`.toLowerCase()}>
+                    <span>{i.name}</span>
+                    {i.note && <span class="palette-note">{i.note}</span>}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+      <button type="button" class="palette-ask" hidden data-ask-item>Ask the assistant: <span data-ask-q></span></button>
+      <p class="palette-empty" hidden data-empty>No page matches.</p>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  const dlg = document.querySelector<HTMLDialogElement>('[data-palette]');
+  const input = document.querySelector<HTMLInputElement>('[data-palette-input]');
+  if (dlg && input) {
+    const items = [...dlg.querySelectorAll<HTMLAnchorElement>('[data-item]')];
+    const groups = [...dlg.querySelectorAll<HTMLElement>('[data-group]')];
+    const empty = dlg.querySelector<HTMLElement>('[data-empty]')!;
+    const askItem = dlg.querySelector<HTMLButtonElement>('[data-ask-item]')!;
+    const askQ = askItem.querySelector<HTMLElement>('[data-ask-q]')!;
+    const pages = () => items.filter((a) => !a.closest('li')!.hidden);
+    const visible = () => [...(askItem.hidden ? [] : [askItem]), ...pages()] as HTMLElement[];
+    const ask = () => { const q = input.value.trim(); dlg.close(); dispatchEvent(new CustomEvent('ask-ai', { detail: { q } })); };
+    askItem.addEventListener('click', ask);
+    const open = () => { if (!dlg.open) { dlg.showModal(); input.value = ''; filter(); input.focus(); } };
+    const filter = () => {
+      const q = input.value.trim().toLowerCase();
+      // Natural language: drop filler like "take me to the ... page", then every remaining word must match
+      const tokens = q.replace(/\b(please|take me to|go to|show me|open|navigate to|i want to see|where is|where are|the|a|an|page|section|our|your|my)\b/g, ' ').split(/\s+/).filter(Boolean);
+      items.forEach((a) => { a.closest('li')!.hidden = tokens.length > 0 && !tokens.every((t) => a.dataset.text!.includes(t)); });
+      groups.forEach((g) => { g.hidden = !g.querySelector('li:not([hidden])'); });
+      askItem.hidden = q.length < 3;
+      if (!q) items.forEach((a) => { a.closest('li')!.hidden = false; });
+      askQ.textContent = q;
+      empty.hidden = pages().length > 0 || q.length >= 3;
+    };
+    input.addEventListener('input', filter);
+    document.querySelectorAll('[data-palette-open]').forEach((b) => b.addEventListener('click', open));
+    addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); dlg.open ? dlg.close() : open(); }
+    });
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+    dlg.addEventListener('keydown', (e) => {
+      const list = visible();
+      const i = list.indexOf(document.activeElement as HTMLElement);
+      if (e.key === 'ArrowDown') { e.preventDefault(); (list[i + 1] ?? list[0])?.focus(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); (i <= 0 ? input : list[i - 1]).focus(); }
+      if (e.key === 'Enter' && document.activeElement === input) { const first = pages()[0]; if (first) first.click(); else if (!askItem.hidden) ask(); }
+    });
+  }
+</script>

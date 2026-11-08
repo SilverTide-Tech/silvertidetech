@@ -1,0 +1,137 @@
+---
+/**
+ * Product page (architecture §5, Product template). Only launched products get a page (§1.3).
+ * Optional blocks (how it works, audience, languages, FAQ) render only when the data exists;
+ * none have been confirmed for SarasTech yet, so they are omitted rather than invented.
+ */
+import { getCollection, getEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/layout/PageHero.astro';
+import SectionHeading from '../../components/ui/SectionHeading.astro';
+import StatusBadge from '../../components/ui/StatusBadge.astro';
+import Button from '../../components/ui/Button.astro';
+import TextLink from '../../components/ui/TextLink.astro';
+import CapabilityGrid from '../../components/cards/CapabilityGrid.astro';
+import ProductCard from '../../components/cards/ProductCard.astro';
+import CtaBand from '../../components/cards/CtaBand.astro';
+import { LAUNCHED_STATUSES } from '../../lib/status';
+import { softwareProductSchema } from '../../lib/seo';
+
+export async function getStaticPaths() {
+  const products = await getCollection('products', ({ data }) => LAUNCHED_STATUSES.includes(data.status));
+  return products.map((product) => ({ params: { slug: product.id }, props: { product } }));
+}
+
+const { product } = Astro.props;
+const p = product.data;
+const business = await getEntry(p.business);
+const phase = (await getCollection('roadmap', ({ data }) => data.product?.id === product.id))[0];
+
+const siblings = (await getCollection('products', ({ id, data }) => id !== product.id && LAUNCHED_STATUSES.includes(data.status))).map(
+  (s) => ({
+    name: s.data.name,
+    category: s.data.category,
+    tagline: s.data.tagline,
+    status: s.data.status,
+    capabilities: s.data.capabilities.map((c) => c.title),
+    href: `/products/${s.id}`,
+  }),
+);
+---
+
+<BaseLayout
+  title={`${p.name}: ${p.category}`}
+  description={`${p.tagline} ${p.summary}`}
+  structuredData={[
+    softwareProductSchema(
+      { name: p.name, category: p.category, summary: p.summary, externalUrl: p.externalUrl, capabilities: p.capabilities.map((c) => c.title) },
+      `/products/${product.id}`,
+      Astro.site,
+    ),
+  ]}
+>
+  <PageHero
+    eyebrow={p.category}
+    title={p.name}
+    intro={p.tagline}
+    breadcrumbs={[
+      { label: 'Home', href: '/' },
+      { label: 'Products', href: '/products' },
+      { label: p.name, href: `/products/${product.id}` },
+    ]}
+  >
+    <StatusBadge status={p.status} />
+    {p.externalUrl && <Button href={p.externalUrl} variant="accent" tone="dark" external>Visit {p.name}</Button>}
+  </PageHero>
+
+  <section aria-labelledby="overview-title" class="py-16 lg:py-24">
+    <div class="container-site grid gap-6 lg:grid-cols-[1fr_1.4fr] lg:gap-16" data-reveal>
+      <SectionHeading id="overview-title" eyebrow="Overview" title={`What ${p.name} does`} />
+      <div class="grid gap-5 text-lead">
+        <p>{p.summary}</p>
+        {
+          business && (
+            <p class="text-ink-600">
+              {p.name} is part of our {business.data.name} business: {business.data.purpose.charAt(0).toLowerCase()}
+              {business.data.purpose.slice(1)}
+            </p>
+          )
+        }
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="capabilities-title" class="bg-mist py-16 lg:py-24">
+    <div class="container-site" data-reveal>
+      <SectionHeading id="capabilities-title" eyebrow="Capabilities" title="Current capabilities" />
+      <div class="mt-10"><CapabilityGrid items={p.capabilities} /></div>
+      {
+        p.languages && p.languages.length > 0 && (
+          <p class="mt-8 text-[0.9375rem]">
+            <strong class="text-navy-900">Languages:</strong> {p.languages.join(', ')}
+          </p>
+        )
+      }
+    </div>
+  </section>
+
+  {
+    phase && business && (
+      <section aria-labelledby="ecosystem-title" class="py-16 lg:py-24">
+        <div class="container-site grid gap-6 lg:grid-cols-[1fr_1.4fr] lg:gap-16" data-reveal>
+          <SectionHeading id="ecosystem-title" eyebrow="Part of a bigger journey" title={`Phase ${phase.data.phase} of our ${business.data.name.toLowerCase()} roadmap`} />
+          <div class="grid content-start gap-5">
+            <p class="text-lead">
+              {p.name} is the first step in our {business.data.name.toLowerCase()} ecosystem. Later phases are planned and will
+              be marked clearly when they launch.
+            </p>
+            <p><TextLink href={`/businesses/${business.id}`}>See the {business.data.name.toLowerCase()} roadmap</TextLink></p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    siblings.length > 0 && (
+      <section aria-labelledby="siblings-title" class="bg-mist py-16 lg:py-24">
+        <div class="container-site" data-reveal>
+          <SectionHeading id="siblings-title" eyebrow="More from Silver Tide Tech" title="Other products" />
+          <div class="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {siblings.map((s) => <ProductCard {...s} />)}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    p.externalUrl && (
+      <section aria-label="Visit the product" class:list={['pb-16 lg:pb-24', !phase && 'pt-16 lg:pt-24']}>
+        <div class="container-site" data-reveal>
+          <CtaBand title={`Try ${p.name}`} text={p.summary} href={p.externalUrl} label={`Visit ${p.name}`} variant="accent" external />
+        </div>
+      </section>
+    )
+  }
+</BaseLayout>

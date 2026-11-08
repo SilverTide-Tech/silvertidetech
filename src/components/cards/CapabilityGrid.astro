@@ -1,0 +1,22 @@
+---
+/** Product capability tiles (architecture §5, Product template). Descriptions render only when supplied. */
+interface Props {
+  items: Array<{ title: string; description?: string }>;
+}
+
+const { items } = Astro.props;
+---
+
+<ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  {
+    items.map((c, i) => (
+      <li class="grid content-start gap-3 rounded-[14px] border border-silver-200 bg-white p-6">
+        <span class="font-mono text-xs tracking-[0.08em] text-teal-700" aria-hidden="true">
+          {String(i + 1).padStart(2, '0')}
+        </span>
+        <h3 class="text-[1.125rem] leading-snug font-semibold">{c.title}</h3>
+        {c.description && <p class="text-[0.9375rem]">{c.description}</p>}
+      </li>
+    ))
+  }
+</ul>

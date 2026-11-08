@@ -1,0 +1,36 @@
+---
+/** Section opener: eyebrow + tide stroke + heading + optional intro (brand-direction §6.2). */
+import TideStroke from './TideStroke.astro';
+
+interface Props {
+  title: string;
+  eyebrow?: string;
+  intro?: string;
+  as?: 'h1' | 'h2' | 'h3';
+  tone?: 'light' | 'dark';
+  align?: 'start' | 'center';
+  id?: string;
+  class?: string;
+}
+
+const {
+  title,
+  eyebrow,
+  intro,
+  as: Heading = 'h2',
+  tone = 'light',
+  align = 'start',
+  id,
+  class: className,
+} = Astro.props;
+const dark = tone === 'dark';
+---
+
+<div class:list={['grid max-w-[45rem] content-start gap-3.5', align === 'center' && 'mx-auto justify-items-center text-center', className]}>
+  {eyebrow && <p data-scramble class:list={['eyebrow', dark ? 'text-teal-300' : 'text-teal-700']}>{eyebrow}</p>}
+  <TideStroke tone={tone} />
+  <Heading id={id} class:list={['font-bold', Heading === 'h1' ? 'text-h1' : 'text-h2', dark && 'text-white']}>
+    {title}
+  </Heading>
+  {intro && <p class:list={['text-lead', dark ? 'text-silver-300' : 'text-ink-600']}>{intro}</p>}
+</div>

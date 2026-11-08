@@ -1,0 +1,42 @@
+---
+/**
+ * Overlapping row of founder portraits for joint attributions (founders' note). Decorative:
+ * the names are always given as text beside it. Same silver photo treatment as the founder cards.
+ */
+import { Picture } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+import { getInitials } from '../../lib/people';
+
+interface Props {
+  people: CollectionEntry<'people'>[];
+  /** Ring colour matching the surface behind the row. */
+  tone?: 'light' | 'dark';
+  class?: string;
+}
+
+const { people, tone = 'light', class: className } = Astro.props;
+const ring = tone === 'dark' ? 'ring-navy-900' : 'ring-white';
+---
+
+<div class:list={['flex', className]} aria-hidden="true">
+  {
+    people.map(({ data }) => (
+      <span class:list={['-ml-3 grid size-12 shrink-0 place-items-center overflow-hidden rounded-full bg-silver-100 ring-[3px] first:ml-0 sm:size-14', ring]}>
+        {data.photo ? (
+          <Picture
+            src={data.photo}
+            alt=""
+            formats={['avif', 'webp']}
+            widths={[56, 112, 168]}
+            sizes="56px"
+            loading="lazy"
+            class="h-full w-full object-cover grayscale-[0.92] contrast-[1.04]"
+            style={`object-position: ${data.photoPosition}`}
+          />
+        ) : (
+          <span class="font-display text-sm font-extrabold text-navy-900">{getInitials(data.name)}</span>
+        )}
+      </span>
+    ))
+  }
+</div>

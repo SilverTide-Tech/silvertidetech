@@ -1,0 +1,32 @@
+---
+/** Service tiles with line icons (Home §6 and the Technology Services page). */
+interface Props {
+  services: Array<{ id: string; name: string; summary?: string }>;
+}
+
+const { services } = Astro.props;
+
+const icons: Record<string, string> = {
+  'web-software': 'M4 5h16v11H4zM8 20h8M12 16v4',
+  'mobile-apps': 'M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM11 18h2',
+  'ai-automation': 'M12 3v3M12 18v3M3 12h3M18 12h3M7 7h10v10H7zM10 10h4v4h-4z',
+  'cloud-backend': 'M7 18a4 4 0 0 1-.6-7.96A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9H7z',
+  consulting: 'M5 5h14v10H9l-4 4V5zM9 9h6M9 12h4',
+};
+---
+
+<ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+  {
+    services.map((s) => (
+      <li class="grid content-start gap-4 rounded-[14px] border border-silver-200 bg-white p-6">
+        <span class="grid h-11 w-11 place-items-center rounded-xl bg-mist text-navy-900" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d={icons[s.id] ?? 'M5 12h14'} />
+          </svg>
+        </span>
+        <h3 class="text-[1.0625rem] leading-snug font-semibold">{s.name}</h3>
+        {s.summary && <p class="text-[0.9375rem]">{s.summary}</p>}
+      </li>
+    ))
+  }
+</ul>

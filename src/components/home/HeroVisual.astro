@@ -1,0 +1,75 @@
+---
+/**
+ * Decorative hero visual: a silver-blue 3D orb with orbiting rings and a light particle field.
+ * Pure CSS + one small canvas (no 3D library). Hidden from assistive tech; paused off-screen,
+ * on touch-light devices it draws fewer particles, and it is static under reduced motion.
+ */
+---
+
+<div class="pointer-events-none absolute inset-0 z-[2]" aria-hidden="true" data-hero-visual>
+  <canvas class="absolute inset-0 h-full w-full" data-particles></canvas>
+  <div
+    class="absolute top-1/2 right-[-18%] aspect-square w-[min(80vw,34rem)] -translate-y-1/2 sm:right-[-6%] lg:right-[3%] lg:w-[min(42vw,36rem)]"
+    data-parallax="30"
+  >
+    <div class="orb-float relative h-full w-full" style="perspective: 900px">
+      <div class="orb absolute inset-[12%] rounded-full" data-orb-fallback></div>
+      <div class="absolute inset-[2%]" data-orb3d></div>
+      <div class="orb-ring absolute inset-0 rounded-full border border-silver-300/30" style="--spin: 34s"></div>
+      <div class="orb-ring absolute inset-[-8%] rounded-full border border-electric-400/30" style="--spin: 52s"></div>
+      <div class="orb-ring absolute inset-[4%] rounded-full border border-teal-300/40" style="--spin: 26s"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Real 3D object on large, capable, motion-friendly screens; the CSS orb stays as the fallback.
+  (() => {
+    const slot = document.querySelector<HTMLElement>('[data-orb3d]');
+    const fallback = document.querySelector<HTMLElement>('[data-orb-fallback]');
+    if (!slot || !fallback) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches || innerWidth < 1024) return;
+    const gl = document.createElement('canvas').getContext('webgl2') || document.createElement('canvas').getContext('webgl');
+    if (!gl) return;
+    const go = () => import('../../scripts/orb3d').then((m) => { m.mountOrb(slot); fallback.style.opacity = '0'; }).catch(() => {});
+    'requestIdleCallback' in window ? requestIdleCallback(go, { timeout: 1500 }) : setTimeout(go, 600);
+  })();
+</script>
+
+<script>
+  const host = document.querySelector<HTMLElement>('[data-hero-visual]');
+  const canvas = host?.querySelector<HTMLCanvasElement>('[data-particles]');
+  const ctx = canvas?.getContext('2d');
+  if (host && canvas && ctx) {
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const count = innerWidth < 768 ? 28 : 64;
+    let w = 0, h = 0, raf = 0, visible = true;
+    const dots = Array.from({ length: count }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.4 + 0.4, v: Math.random() * 0.00006 + 0.00002, a: Math.random() * 0.5 + 0.15 }));
+    const size = () => {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      w = canvas.clientWidth; h = canvas.clientHeight;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    const draw = () => {
+      ctx.clearRect(0, 0, w, h);
+      for (const d of dots) {
+        if (!reduce) { d.y -= d.v * 16; if (d.y < -0.02) d.y = 1.02; }
+        ctx.beginPath();
+        ctx.arc(d.x * w, d.y * h, d.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(169,200,255,${d.a})`;
+        ctx.fill();
+      }
+    };
+    const loop = () => { draw(); raf = visible && !reduce ? requestAnimationFrame(loop) : 0; };
+    size(); draw();
+    addEventListener('resize', () => { size(); draw(); });
+    if (!reduce) {
+      new IntersectionObserver(([e]) => {
+        visible = e.isIntersecting;
+        if (visible && !raf) loop();
+      }).observe(host);
+      loop();
+    }
+  }
+</script>

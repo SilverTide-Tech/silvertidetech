@@ -1,0 +1,66 @@
+---
+/**
+ * Product card (brand-direction §8.2). Launched products link to their page; planned ones
+ * use the calmer variant with no sign-up CTA (architecture §7).
+ */
+import StatusBadge from '../ui/StatusBadge.astro';
+import TideStroke from '../ui/TideStroke.astro';
+import type { Status } from '../../lib/status';
+
+interface Props {
+  name: string;
+  category: string;
+  tagline: string;
+  status: Status;
+  capabilities: string[];
+  href?: string;
+  business?: string;
+}
+
+const { name, category, tagline, status, capabilities, href, business } = Astro.props;
+const planned = status === 'planned' || status === 'in-development';
+---
+
+<article
+  class:list={[
+    'relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-silver-200 transition-[border-color,box-shadow,transform] duration-300 ease-[var(--ease-tide-out)]',
+    href && 'hover:-translate-y-0.5 hover:border-silver-300 hover:shadow-[0_22px_40px_-28px_rgba(11,31,58,0.35)]',
+    planned ? 'bg-mist' : 'bg-white',
+  ]}
+>
+  <div class:list={['h-1.5', planned ? 'bg-silver-300' : 'bg-teal-500']} aria-hidden="true"></div>
+  <div class="flex flex-1 flex-col gap-4 p-6 sm:p-8">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      {business && <span class="eyebrow text-ink-500">{business}</span>}
+      <StatusBadge status={status} />
+    </div>
+    <TideStroke />
+    <div>
+      <h3 class="text-[1.625rem] leading-tight font-bold">
+        {href ? <a href={href} class="after:absolute after:inset-0 focus-visible:outline-none">{name}</a> : name}
+      </h3>
+      <p class="mt-1 font-display font-semibold text-ink-700">{category}</p>
+    </div>
+    <p>{tagline}</p>
+    {
+      capabilities.length > 0 && (
+        <ul class="flex flex-wrap gap-2">
+          {capabilities.slice(0, 3).map((c) => (
+            <li class="rounded-full border border-silver-200 bg-mist px-3 py-1.5 text-[0.84375rem] font-medium text-navy-900">{c}</li>
+          ))}
+          {capabilities.length > 3 && (
+            <li class="px-1 py-1.5 text-[0.84375rem] font-medium text-ink-500">+{capabilities.length - 3} more</li>
+          )}
+        </ul>
+      )
+    }
+    {href && <span class="tide-link mt-auto self-start pt-2" aria-hidden="true">View {name} <span>→</span></span>}
+  </div>
+</article>
+
+<style>
+  article:has(h3 a:focus-visible) {
+    outline: 3px solid var(--color-teal-700);
+    outline-offset: 3px;
+  }
+</style>

@@ -1,0 +1,129 @@
+---
+/**
+ * Global layout: fonts, design tokens, SEO metadata, structured data, skip link, header, main landmark, footer.
+ */
+import '@fontsource-variable/manrope';
+import '@fontsource-variable/inter';
+import '@fontsource/jetbrains-mono/500.css';
+import '../styles/global.css';
+// Preload the Latin subsets used above the fold (headline and body) to avoid layout shift.
+import manropeLatin from '@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2?url';
+import interLatin from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
+
+import SiteHeader from '../components/layout/SiteHeader.astro';
+import SiteFooter from '../components/layout/SiteFooter.astro';
+import CommandPalette from '../components/layout/CommandPalette.astro';
+import AskPanel from '../components/layout/AskPanel.astro';
+import { SITE } from '../lib/site';
+
+interface Props {
+  /** Page title without the site name. Omit on the home page. */
+  title?: string;
+  description?: string;
+  /** Keep work-in-progress or utility pages out of search results. */
+  noindex?: boolean;
+  /** schema.org JSON-LD objects for this page. */
+  structuredData?: Array<Record<string, unknown> | undefined>;
+  /** Social sharing image (path under /public). */
+  image?: string;
+}
+
+const { title, description = SITE.description, noindex = false, structuredData = [], image = '/og-default.png' } = Astro.props;
+const fullTitle = title ? `${title} | ${SITE.name}` : `${SITE.name}: ${SITE.tagline}`;
+const site = Astro.site;
+const canonical = site ? new URL(Astro.url.pathname, site).href : undefined;
+const imageUrl = site ? new URL(image, site).href : undefined;
+const jsonLd = structuredData.filter(Boolean);
+---
+
+<!doctype html>
+<html lang={SITE.locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    {canonical && <link rel="canonical" href={canonical} />}
+
+    <link rel="preload" href={manropeLatin} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={interLatin} as="font" type="font/woff2" crossorigin />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0B1F3A" />
+    <meta name="generator" content={Astro.generator} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    {canonical && <meta property="og:url" content={canonical} />}
+    {imageUrl && <meta property="og:image" content={imageUrl} />}
+    {imageUrl && <meta property="og:image:width" content="1200" />}
+    {imageUrl && <meta property="og:image:height" content="630" />}
+    {imageUrl && <meta property="og:image:alt" content={`${SITE.name}: ${SITE.tagline}`} />}
+    <meta name="twitter:card" content={imageUrl ? 'summary_large_image' : 'summary'} />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+
+    {jsonLd.map((data) => <script is:inline type="application/ld+json" set:html={JSON.stringify(data)} />)}
+
+    <script is:inline>
+      document.documentElement.classList.add('js');
+    </script>
+  </head>
+  <body class="flex min-h-dvh flex-col">
+    <a
+      href="#main"
+      class="sr-only z-[70] rounded-[var(--radius-btn)] bg-navy-900 px-4 py-3 font-semibold text-white focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+    >
+      Skip to content
+    </a>
+    <div class="scroll-progress" aria-hidden="true"></div>
+    <SiteHeader />
+    <main id="main" tabindex="-1" class="flex-1 focus:outline-none">
+      <slot />
+    </main>
+    <SiteFooter />
+    <CommandPalette />
+    <AskPanel />
+
+    <script is:inline>
+      // Before first paint: reveal blocks already in the viewport so above-the-fold content
+      // (often the LCP element) is never held back by the scroll animation.
+      document.querySelectorAll('[data-reveal]').forEach(function (el) {
+        if (el.getBoundingClientRect().top < window.innerHeight) el.setAttribute('data-revealed', '');
+      });
+    </script>
+    <script>
+      // Premium motion (GSAP) loads after the page is idle so it never delays first paint.
+      const start = () => import('../scripts/motion').then((m) => m.initMotion()).catch(() => {});
+      'requestIdleCallback' in window ? requestIdleCallback(start, { timeout: 2500 }) : setTimeout(start, 1200);
+    </script>
+    <script>
+      // Reveal [data-reveal] blocks once as they enter the viewport (brand-direction §10.5).
+      const targets = document.querySelectorAll<HTMLElement>('[data-reveal]:not([data-revealed])');
+      const reveal = (el: Element) => el.setAttribute('data-revealed', '');
+      if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        targets.forEach(reveal);
+      } else {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                reveal(entry.target);
+                io.unobserve(entry.target);
+              }
+            }
+          },
+          { rootMargin: '0px 0px -8% 0px', threshold: 0.05 },
+        );
+        targets.forEach((el) => io.observe(el));
+      }
+    </script>
+  </body>
+</html>

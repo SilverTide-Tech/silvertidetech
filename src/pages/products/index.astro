@@ -1,0 +1,52 @@
+---
+/** Products overview (architecture §4, Overview template): generated product cards, grouped by status. */
+import { getCollection, getEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/layout/PageHero.astro';
+import ProductCard from '../../components/cards/ProductCard.astro';
+import CtaBand from '../../components/cards/CtaBand.astro';
+import { LAUNCHED_STATUSES, compareByStatusThenOrder } from '../../lib/status';
+
+const products = (await getCollection('products')).sort((a, b) =>
+  compareByStatusThenOrder({ status: a.data.status, order: a.data.order }, { status: b.data.status, order: b.data.order }),
+);
+
+const cards = await Promise.all(
+  products.map(async (p) => ({
+    name: p.data.name,
+    category: p.data.category,
+    tagline: p.data.tagline,
+    status: p.data.status,
+    capabilities: p.data.capabilities.map((c) => c.title),
+    href: LAUNCHED_STATUSES.includes(p.data.status) ? `/products/${p.id}` : undefined,
+    business: (await getEntry(p.data.business))?.data.name,
+  })),
+);
+---
+
+<BaseLayout title="Products" description="Products built and operated by Silver Tide Tech, with the current status of each.">
+  <PageHero
+    eyebrow="Products"
+    title="Our products"
+    intro="Silver Tide Tech builds and operates its own technology products. Each product shows its current status."
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Products', href: '/products' }]}
+  />
+
+  <section aria-labelledby="all-title" class="py-16 lg:py-24">
+    <div class="container-site" data-reveal>
+      <h2 id="all-title" class="sr-only">All products</h2>
+      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {cards.map((card) => <ProductCard {...card} />)}
+      </div>
+      <p class="mt-8 text-[0.9375rem] text-ink-500">
+        Planned products appear on our <a href="/vision" class="font-medium text-teal-700 underline-offset-4 hover:underline">vision and roadmap</a> page until they launch.
+      </p>
+    </div>
+  </section>
+
+  <section aria-label="Contact" class="pb-16 lg:pb-24">
+    <div class="container-site" data-reveal>
+      <CtaBand title="Questions about our products?" text="We’re happy to hear from you." href="/contact?topic=sarastech" label="Contact us" />
+    </div>
+  </section>
+</BaseLayout>

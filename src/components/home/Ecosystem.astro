@@ -1,0 +1,110 @@
+---
+/**
+ * Interactive ecosystem map (desktop). Nodes are generated from the content collections, so only
+ * real businesses and products appear. Below `lg` it is hidden and the business cards below it
+ * are the mobile alternative. Every node is a real link.
+ */
+import { getCollection } from 'astro:content';
+import { STATUS_META } from '../../lib/status';
+import { SITE } from '../../lib/site';
+
+const [businesses, products] = await Promise.all([getCollection('businesses', ({ data }) => data.showOnHome), getCollection('products')]);
+const biz = businesses.sort((a, b) => a.data.order - b.data.order);
+
+// Fixed layout slots: businesses in column 2, their products in column 3.
+const colX = { company: 40, business: 360, product: 700 };
+const slotY = biz.length === 1 ? [175] : biz.length === 2 ? [90, 260] : biz.map((_, i) => 50 + (i * 250) / (biz.length - 1));
+
+const nodes = biz.map((b, i) => ({
+  id: b.id,
+  name: b.data.navName ?? b.data.name,
+  href: `/businesses/${b.id}`,
+  note: b.data.status === 'planned' ? STATUS_META.planned.label : 'Business',
+  planned: b.data.status === 'planned',
+  y: slotY[i],
+  products: products
+    .filter((p) => p.data.business.id === b.id && p.data.status === 'available-now')
+    .map((p) => ({ name: p.data.name, href: `/products/${p.id}`, note: STATUS_META[p.data.status].label })),
+}));
+const centerY = 175;
+---
+
+<div class="relative hidden overflow-hidden rounded-[20px] border border-navy-700 p-6 lg:block aurora grain spot" data-spot data-tone="dark" data-reveal>
+  <svg viewBox="0 0 960 350" role="group" aria-label={`${SITE.name} ecosystem: businesses and products`} class="h-auto w-full" focusable="false">
+    <defs>
+      <linearGradient id="eco-grad" x1="0" x2="1">
+        <stop offset="0" stop-color="#5FE3D6" />
+        <stop offset="1" stop-color="#5AA2FF" />
+      </linearGradient>
+    </defs>
+
+    {/* Edges */}
+    {
+      nodes.map((n) => (
+        <>
+          <path
+            class="eco-edge"
+            data-planned={n.planned}
+            d={`M ${colX.company + 200} ${centerY} C ${colX.company + 280} ${centerY}, ${colX.business - 80} ${n.y + 32}, ${colX.business} ${n.y + 32}`}
+            fill="none"
+            stroke="url(#eco-grad)"
+            stroke-width="1.6"
+          />
+          {n.products.map((p) => (
+            <path
+              class="eco-edge"
+              d={`M ${colX.business + 230} ${n.y + 32} C ${colX.business + 290} ${n.y + 32}, ${colX.product - 60} ${n.y + 32}, ${colX.product} ${n.y + 32}`}
+              fill="none"
+              stroke="url(#eco-grad)"
+              stroke-width="1.6"
+            />
+          ))}
+        </>
+      ))
+    }
+
+    {/* Company node */}
+    <a href="/about" class="eco-node" aria-label={`About ${SITE.name}`}>
+      <rect x={colX.company} y={centerY - 40} width="200" height="80" rx="16" fill="rgb(255 255 255 / 0.05)" stroke="#5FE3D6" stroke-width="1.5" />
+      <text x={colX.company + 100} y={centerY - 4} text-anchor="middle" font-family="Manrope Variable, sans-serif" font-weight="800" font-size="19" fill="#fff">{SITE.name}</text>
+      <text x={colX.company + 100} y={centerY + 20} text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="1.2" fill="#C9D2DD">ABOUT THE COMPANY</text>
+    </a>
+
+    {/* Business and product nodes */}
+    {
+      nodes.map((n) => (
+        <>
+          <a href={n.href} class="eco-node" aria-label={`${n.name} (${n.note})`}>
+            <rect x={colX.business} y={n.y} width="230" height="64" rx="14" fill="rgb(255 255 255 / 0.05)" stroke="#A9B4C2" stroke-opacity="0.5" stroke-width="1.2" stroke-dasharray={n.planned ? '5 5' : undefined} />
+            <text x={colX.business + 20} y={n.y + 28} font-family="Manrope Variable, sans-serif" font-weight="700" font-size="16" fill="#fff">{n.name}</text>
+            <text x={colX.business + 20} y={n.y + 48} font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="1.2" fill={n.planned ? '#C9D2DD' : '#5FE3D6'}>{n.note.toUpperCase()}</text>
+          </a>
+          {n.products.map((p) => (
+            <a href={p.href} class="eco-node" aria-label={`${p.name} (${p.note})`}>
+              <rect x={colX.product} y={n.y} width="220" height="64" rx="14" fill="rgb(47 123 255 / 0.12)" stroke="#5AA2FF" stroke-opacity="0.7" stroke-width="1.2" />
+              <text x={colX.product + 20} y={n.y + 28} font-family="Manrope Variable, sans-serif" font-weight="700" font-size="16" fill="#fff">{p.name}</text>
+              <text x={colX.product + 20} y={n.y + 48} font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="1.2" fill="#8EC2FF">{p.note.toUpperCase()}</text>
+            </a>
+          ))}
+        </>
+      ))
+    }
+  </svg>
+</div>
+
+<script>
+  // Guided tour: the assistant can highlight matching businesses/products (map nodes and cards).
+  const run = (paths: string[]) => {
+    const section = document.querySelector('#build-title')?.closest('section');
+    if (!section || !paths.length) return;
+    const links = [...section.querySelectorAll<HTMLAnchorElement>('a[href]')].filter((a) => paths.includes(a.getAttribute('href') ?? ''));
+    const map = section.querySelector<HTMLElement>('[data-spot]');
+    const target = map && map.offsetParent !== null ? map : section;
+    target.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+    links.forEach((a) => a.classList.add('eco-pulse'));
+    setTimeout(() => links.forEach((a) => a.classList.remove('eco-pulse')), 7000);
+  };
+  addEventListener('eco-tour', ((e: CustomEvent<{ paths: string[] }>) => run(e.detail.paths)) as EventListener);
+  const tour = new URLSearchParams(location.search).get('tour');
+  if (tour) setTimeout(() => run(tour.split(',')), 800);
+</script>

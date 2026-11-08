@@ -1,0 +1,42 @@
+---
+/** Businesses Overview (architecture §4, Overview template): every business and its status. */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/layout/PageHero.astro';
+import BusinessCard from '../../components/cards/BusinessCard.astro';
+import CtaBand from '../../components/cards/CtaBand.astro';
+import { getBusinessCards } from '../../lib/businesses';
+import { FUTURE_VENTURES } from '../../lib/company';
+
+const cards = await getBusinessCards();
+---
+
+<BaseLayout title="Businesses" description="The businesses of Silver Tide Tech, with the current status of each.">
+  <PageHero
+    eyebrow="Businesses"
+    title="What we build"
+    intro="Silver Tide Tech is the parent brand for our businesses. Education is our first major vertical, and more businesses will follow as we grow."
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Businesses', href: '/businesses' }]}
+  />
+
+  <section aria-labelledby="all-title" class="py-16 lg:py-24">
+    <div class="container-site" data-reveal>
+      <h2 id="all-title" class="sr-only">All businesses</h2>
+      <div class="grid gap-6 md:grid-cols-2">
+        {cards.map(({ order: _order, ...card }) => <BusinessCard {...card} />)}
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="growth-title" class="bg-mist py-16 lg:py-20">
+    <div class="container-site grid gap-4 lg:grid-cols-[1fr_1.4fr] lg:gap-16" data-reveal>
+      <h2 id="growth-title" class="text-h2 font-bold">Built to grow</h2>
+      <p class="text-lead">{FUTURE_VENTURES}</p>
+    </div>
+  </section>
+
+  <section aria-label="Contact" class="py-16 lg:py-24">
+    <div class="container-site" data-reveal>
+      <CtaBand title="Questions about our businesses?" text="We’re happy to hear from you." href="/contact" label="Contact us" />
+    </div>
+  </section>
+</BaseLayout>

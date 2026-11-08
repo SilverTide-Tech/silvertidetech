@@ -1,0 +1,44 @@
+---
+/**
+ * Leadership (architecture §4, People template): "Founders & Directors", five uniform cards, then the
+ * founders' note preview once it is published. Names and photos only until the founders supply
+ * designations and bios (company-vision §6).
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/layout/PageHero.astro';
+import FounderGrid from '../components/cards/FounderGrid.astro';
+import FounderNote from '../components/cards/FounderNote.astro';
+import CtaBand from '../components/cards/CtaBand.astro';
+import { getFoundersNote } from '../lib/founders-note';
+
+const note = await getFoundersNote();
+---
+
+<BaseLayout title="Leadership" description="Meet the Founders & Directors of Silver Tide Tech, the product-led technology and innovation company.">
+  <PageHero
+    eyebrow="Leadership"
+    title="Founders & Directors"
+    intro="The people building Silver Tide Tech."
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Leadership', href: '/leadership' }]}
+  />
+
+  <section aria-labelledby="people-title" class="py-16 lg:py-24">
+    <div class="container-site" data-reveal>
+      <h2 id="people-title" class="sr-only">Founders &amp; Directors</h2>
+      <FounderGrid eager />
+    </div>
+  </section>
+
+  <FounderNote />
+
+  <section aria-label="Careers" class:list={['pb-16 lg:pb-24', note && 'pt-16 lg:pt-24']}>
+    <div class="container-site" data-reveal>
+      <CtaBand
+        title="Build with us"
+        text="We’re building for the long term, and we’re always glad to hear from people who want to build with us."
+        href="/careers"
+        label="Explore careers"
+      />
+    </div>
+  </section>
+</BaseLayout>

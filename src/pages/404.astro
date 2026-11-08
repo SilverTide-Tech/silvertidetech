@@ -1,0 +1,36 @@
+---
+/** 404 (architecture §4): short message and links back into the site. */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/ui/Button.astro';
+import TextLink from '../components/ui/TextLink.astro';
+import TideStroke from '../components/ui/TideStroke.astro';
+
+const links = [
+  { label: 'Businesses', href: '/businesses' },
+  { label: 'Products', href: '/products' },
+  { label: 'Contact', href: '/contact' },
+];
+---
+
+<BaseLayout title="Page not found" noindex>
+  <div class="aurora grain spot relative overflow-hidden" data-spot data-tone="dark">
+  <section class="container-site relative z-10 py-28 lg:py-40">
+    <p class="eyebrow text-teal-300">Error 404</p>
+    <TideStroke class="mt-4" />
+    <h1 class="text-metal mt-5 max-w-2xl text-[clamp(2.5rem,1.5rem+4vw,5rem)] leading-[1.05] font-extrabold">This page drifted away.</h1>
+    <p class="mt-5 max-w-xl text-lead text-silver-300">The page you’re looking for doesn’t exist or has moved.</p>
+    <div class="mt-9 flex flex-wrap items-center gap-x-8 gap-y-4">
+      <Button href="/" arrow>Go to the home page</Button>
+      <ul class="flex flex-wrap gap-x-6 gap-y-2">
+        {
+          links.map((l) => (
+            <li>
+              <TextLink href={l.href}>{l.label}</TextLink>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+  </div>
+</BaseLayout>

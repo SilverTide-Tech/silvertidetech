@@ -1,0 +1,326 @@
+---
+import AskBot from './AskBot.astro';
+/**
+ * "Ask Silver Tide": Gemini-powered assistant panel (server endpoint: /api/ask).
+ * Tools: Ask (chat, voice, follow-ups, page-aware, guided tour), Explain, Draft, Translate page.
+ * Answers come only from the website's own content; the browser never calls Google directly.
+ */
+const tabs = [
+  { id: 'ask', label: 'Ask' },
+  { id: 'explain', label: 'Explain' },
+  { id: 'draft', label: 'Draft' },
+  { id: 'translate', label: 'Translate' },
+];
+const audiences = ['A teacher', 'A school owner', 'A student', 'A parent'];
+const examples = ['What is SarasTech?', 'Which businesses are planned?'];
+const languages = [
+  { name: 'Hindi', code: 'hi' }, { name: 'Hinglish', code: 'hi-Latn' }, { name: 'Spanish', code: 'es' }, { name: 'French', code: 'fr' },
+  { name: 'German', code: 'de' }, { name: 'Japanese', code: 'ja' }, { name: 'Tamil', code: 'ta' }, { name: 'Bengali', code: 'bn' },
+];
+---
+
+<AskBot />
+
+<dialog class="ask" aria-label="Ask Silver Tide assistant" data-ask data-lenis-prevent>
+  <div class="ask-head">
+    <p class="ask-title">Ask Silver Tide <span class="ask-badge">AI</span></p>
+    <button type="button" class="ask-close" data-ask-close aria-label="Close assistant">✕</button>
+  </div>
+
+  <div class="ask-tabs" role="tablist" aria-label="Assistant tools">
+    {tabs.map((t, i) => <button type="button" role="tab" id={`ask-tab-${t.id}`} aria-controls={`ask-panel-${t.id}`} aria-selected={i === 0} tabindex={i === 0 ? 0 : -1} data-tab={t.id}>{t.label}</button>)}
+  </div>
+
+  <div class="ask-body">
+    <section role="tabpanel" id="ask-panel-ask" aria-labelledby="ask-tab-ask" data-panel="ask">
+      <div class="ask-log" data-log aria-live="polite">
+        <p class="ask-hint">Ask about Silver Tide, SarasTech, careers or leadership, in any language. Answers come only from this website.</p>
+        <div class="ask-chips" data-starters>
+          <button type="button" data-example="Summarize this page in a few short sentences.">Summarize this page</button>
+          {examples.map((q) => <button type="button" data-example={q}>{q}</button>)}
+        </div>
+      </div>
+      <form class="ask-form" data-chat-form>
+        <input type="text" name="q" maxlength="700" placeholder="Ask in any language…" aria-label="Your question" autocomplete="off" required />
+        <button type="button" class="ask-mic" data-mic hidden aria-pressed="false" aria-label="Speak your question">🎙</button>
+        <button type="submit">Send</button>
+      </form>
+    </section>
+
+    <section role="tabpanel" id="ask-panel-explain" aria-labelledby="ask-tab-explain" data-panel="explain" hidden>
+      <p class="ask-hint">SarasTech and our Education vision, explained for you from what the website says.</p>
+      <form class="ask-stack" data-tool-form="explain">
+        <fieldset class="ask-chips">
+          <legend class="sr-only">Explain for</legend>
+          {audiences.map((a, i) => (
+            <label><input type="radio" name="audience" value={a} checked={i === 0} /><span>{a}</span></label>
+          ))}
+        </fieldset>
+        <button type="submit">Explain SarasTech</button>
+      </form>
+      <div class="ask-result" data-result="explain" aria-live="polite"></div>
+    </section>
+
+    <section role="tabpanel" id="ask-panel-draft" aria-labelledby="ask-tab-draft" data-panel="draft" hidden>
+      <p class="ask-hint">Write a rough message in any language and get a clear, polite version.</p>
+      <form class="ask-stack" data-tool-form="draft">
+        <textarea name="m" rows="5" maxlength="700" aria-label="Your rough message" placeholder="Write what you want to say, in any language" required></textarea>
+        <button type="submit">Polish my message</button>
+      </form>
+      <div class="ask-result" data-result="draft" aria-live="polite"></div>
+    </section>
+
+    <section role="tabpanel" id="ask-panel-translate" aria-labelledby="ask-tab-translate" data-panel="translate" hidden>
+      <p class="ask-hint">Translate this page. Brand and product names stay unchanged. AI-generated, this page only.</p>
+      <form class="ask-stack" data-translate-form>
+        <label class="ask-label">Language
+          <select name="language" data-lang-select>
+            {languages.map((l) => <option value={l.name} data-code={l.code}>{l.name}</option>)}
+          </select>
+        </label>
+        <button type="submit">Translate this page</button>
+        <button type="button" class="ask-secondary" data-restore hidden>Show original</button>
+      </form>
+      <p class="ask-status" data-tr-status role="status"></p>
+    </section>
+  </div>
+
+  <p class="ask-foot">AI-generated from this website's content. It can make mistakes; confirm important details with the team.</p>
+</dialog>
+
+<script>
+  const dlg = document.querySelector<HTMLDialogElement>('[data-ask]');
+  if (dlg) {
+    type Source = { path: string; title: string };
+    type Reply = { answer?: string; sources?: Source[]; followups?: string[]; translations?: string[]; error?: string; message?: string };
+
+    const history: { role: 'user' | 'assistant'; text: string }[] = [];
+    const log = dlg.querySelector<HTMLElement>('[data-log]')!;
+    const tabs = [...dlg.querySelectorAll<HTMLButtonElement>('[data-tab]')];
+    const panels = [...dlg.querySelectorAll<HTMLElement>('[data-panel]')];
+    const synth: SpeechSynthesis | null = 'speechSynthesis' in window ? window.speechSynthesis : null;
+
+    const openPanel = () => { if (!dlg.open) dlg.showModal(); };
+    const select = (id: string) => {
+      tabs.forEach((t) => { const on = t.dataset.tab === id; t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; });
+      panels.forEach((p) => { p.hidden = p.dataset.panel !== id; });
+    };
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => select(t.dataset.tab!));
+      t.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        const n = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+        n.focus(); select(n.dataset.tab!);
+      });
+    });
+    document.querySelectorAll('[data-ask-open]').forEach((b) => b.addEventListener('click', openPanel));
+    dlg.querySelector('[data-ask-close]')!.addEventListener('click', () => dlg.close());
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+    dlg.addEventListener('close', () => synth?.cancel());
+
+    const post = async (body: object): Promise<Reply> => {
+      try {
+        const res = await fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = (await res.json().catch(() => ({}))) as Reply;
+        if (res.ok) return data;
+        if (data.message) return { error: data.message };
+        if (data.error === 'not-configured') return { error: 'The assistant is not switched on yet. Please check back soon.' };
+        return { error: 'The assistant could not answer right now. Please try again in a moment.' };
+      } catch {
+        return { error: 'Could not reach the assistant. Check your connection and try again.' };
+      }
+    };
+
+    // ---------- Voice out ----------
+    const speak = (text: string) => {
+      if (!synth) return;
+      synth.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      const hi = /[\u0900-\u097F]/.test(text);
+      u.lang = hi ? 'hi-IN' : 'en-IN';
+      const voices = synth.getVoices();
+      const v = voices.find((x) => x.lang.toLowerCase().startsWith(hi ? 'hi' : 'en-in')) ?? voices.find((x) => x.lang.toLowerCase().startsWith(hi ? 'hi' : 'en'));
+      if (v) u.voice = v;
+      synth.speak(u);
+    };
+
+    // ---------- Guided tour: highlight matching businesses/products on the home page ----------
+    const tourPaths = (sources: Source[] = []) => sources.map((s) => s.path).filter((p) => /^\/(businesses|products)\//.test(p));
+    const startTour = (paths: string[]) => {
+      if (location.pathname === '/' || location.pathname === '') { dlg.close(); dispatchEvent(new CustomEvent('eco-tour', { detail: { paths } })); }
+      else location.href = `/?tour=${encodeURIComponent(paths.join(','))}`;
+    };
+
+    // ---------- Rendering (never innerHTML) ----------
+    const render = (into: HTMLElement, r: Reply, opts: { chat?: boolean } = {}) => {
+      const box = document.createElement('div');
+      box.className = 'ask-msg ask-bot' + (r.error ? ' ask-err' : '');
+      (r.error ?? r.answer ?? '').split(/\n+/).forEach((line) => { const p = document.createElement('p'); p.textContent = line; box.appendChild(p); });
+      if (r.sources?.length) {
+        const s = document.createElement('p'); s.className = 'ask-src'; s.textContent = 'Read more: ';
+        r.sources.forEach((x, i) => { const a = document.createElement('a'); a.href = x.path; a.textContent = x.title.split('|')[0].trim(); s.appendChild(a); if (i < r.sources!.length - 1) s.append(' · '); });
+        box.appendChild(s);
+      }
+      if (r.answer && opts.chat) {
+        const row = document.createElement('p'); row.className = 'ask-actions';
+        const paths = tourPaths(r.sources);
+        if (paths.length) {
+          const tour = document.createElement('button'); tour.type = 'button'; tour.textContent = 'Show me on the site';
+          tour.addEventListener('click', () => startTour(paths)); row.appendChild(tour);
+        }
+        if (synth) {
+          const listen = document.createElement('button'); listen.type = 'button'; listen.textContent = '🔊 Listen';
+          listen.addEventListener('click', () => speak(r.answer!)); row.appendChild(listen);
+        }
+        if (row.children.length) box.appendChild(row);
+      }
+      into.appendChild(box);
+      if (r.followups?.length) {
+        const f = document.createElement('div'); f.className = 'ask-chips ask-follow';
+        r.followups.forEach((q) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = q; b.addEventListener('click', () => { f.remove(); sendChat(q); }); f.appendChild(b); });
+        into.appendChild(f);
+      }
+      return box;
+    };
+    const busy = (el: HTMLElement) => { el.setAttribute('aria-busy', 'true'); const d = document.createElement('div'); d.className = 'ask-msg ask-bot ask-typing'; d.textContent = 'Thinking…'; el.appendChild(d); return d; };
+
+    async function sendChat(q: string, fromVoice = false) {
+      synth?.cancel();
+      log.querySelectorAll('.ask-hint, [data-starters], .ask-follow').forEach((n) => n.remove());
+      const u = document.createElement('div'); u.className = 'ask-msg ask-user'; u.textContent = q; log.appendChild(u);
+      const wait = busy(log); log.scrollTop = log.scrollHeight;
+      const r = await post({ mode: 'chat', message: q, history: history.slice(-6), page: location.pathname.replace(/(.)\/$/, '$1') });
+      wait.remove(); log.removeAttribute('aria-busy');
+      render(log, r, { chat: true }); log.scrollTop = log.scrollHeight;
+      if (r.answer) { history.push({ role: 'user', text: q }, { role: 'assistant', text: r.answer }); if (fromVoice) speak(r.answer); }
+    }
+
+    const chatForm = dlg.querySelector<HTMLFormElement>('[data-chat-form]')!;
+    const qInput = chatForm.elements.namedItem('q') as HTMLInputElement;
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = qInput.value.trim(); if (!q) return; qInput.value = ''; sendChat(q);
+    });
+    dlg.querySelectorAll<HTMLButtonElement>('[data-example]').forEach((b) => b.addEventListener('click', () => sendChat(b.dataset.example!)));
+
+    // ---------- Voice in (browser speech recognition; Chrome and Edge) ----------
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const mic = dlg.querySelector<HTMLButtonElement>('[data-mic]')!;
+    if (SR) {
+      mic.hidden = false;
+      // Browsers cannot detect the spoken language by themselves, so listen in the browser's own language
+      // (Hindi if the browser prefers Hindi, otherwise Indian English). Typed questions are detected automatically.
+      const pref = (navigator.languages?.length ? navigator.languages : [navigator.language]).find((l) => /^(hi|en)/i.test(l)) ?? 'en-IN';
+      const voiceLang = /^hi/i.test(pref) ? 'hi-IN' : /^en-(IN|US|GB|AU)$/i.test(pref) ? pref : 'en-IN';
+      let rec: any = null; let listening = false;
+      mic.addEventListener('click', () => {
+        if (listening) { rec?.stop(); return; }
+        synth?.cancel();
+        rec = new SR(); rec.lang = voiceLang; rec.interimResults = true; rec.maxAlternatives = 1;
+        let finalText = '';
+        rec.onstart = () => { listening = true; mic.setAttribute('aria-pressed', 'true'); mic.classList.add('is-on'); qInput.placeholder = 'Listening…'; };
+        rec.onresult = (e: any) => { let t = ''; for (const r of e.results) { t += r[0].transcript; if (r.isFinal) finalText = t; } qInput.value = t; };
+        rec.onerror = () => { qInput.placeholder = 'Mic unavailable. Type your question…'; };
+        rec.onend = () => {
+          listening = false; mic.setAttribute('aria-pressed', 'false'); mic.classList.remove('is-on'); qInput.placeholder = 'Ask in any language…';
+          const q = (finalText || qInput.value).trim(); if (q) { qInput.value = ''; sendChat(q, true); }
+        };
+        try { rec.start(); } catch { /* already started */ }
+      });
+    }
+
+    // ---------- Explain / Draft ----------
+    dlg.querySelectorAll<HTMLFormElement>('[data-tool-form]').forEach((form) => {
+      const mode = form.dataset.toolForm!;
+      const out = dlg.querySelector<HTMLElement>(`[data-result="${mode}"]`)!;
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const f = new FormData(form);
+        const message = mode === 'explain' ? 'Explain SarasTech and the Education business.' : String(f.get('m') ?? '').trim();
+        if (!message) return;
+        out.replaceChildren(); const wait = busy(out);
+        const r = await post({ mode, message, audience: f.get('audience'), language: /^hi/i.test(navigator.language) ? 'Hindi' : 'English' });
+        wait.remove(); out.removeAttribute('aria-busy');
+        const box = render(out, r);
+        if (mode === 'draft' && r.answer) {
+          const actions = document.createElement('p'); actions.className = 'ask-actions';
+          const copy = document.createElement('button'); copy.type = 'button'; copy.textContent = 'Copy message';
+          copy.addEventListener('click', async () => { try { await navigator.clipboard.writeText(r.answer!); copy.textContent = 'Copied'; } catch { copy.textContent = 'Copy failed'; } });
+          const go = document.createElement('a'); go.href = '/contact'; go.textContent = 'Open Contact page';
+          actions.append(copy, go); box.appendChild(actions);
+        }
+      });
+    });
+
+    // ---------- Translate this page ----------
+    const trForm = dlg.querySelector<HTMLFormElement>('[data-translate-form]')!;
+    const trStatus = dlg.querySelector<HTMLElement>('[data-tr-status]')!;
+    const restoreBtn = dlg.querySelector<HTMLButtonElement>('[data-restore]')!;
+    const langSel = dlg.querySelector<HTMLSelectElement>('[data-lang-select]')!;
+    let originals: { node: Text; text: string }[] = [];
+    let translatedLang = '';
+
+    const collect = () => {
+      const root = document.querySelector('main'); if (!root) return [];
+      const nodes: Text[] = [];
+      const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode(n) {
+          const el = n.parentElement;
+          if (!el || (n.nodeValue ?? '').trim().length < 2) return NodeFilter.FILTER_REJECT;
+          if (el.closest('script,style,noscript,svg,astro-island,form,[data-no-translate]')) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
+        },
+      });
+      while (w.nextNode()) nodes.push(w.currentNode as Text);
+      return nodes;
+    };
+    const restore = () => {
+      originals.forEach(({ node, text }) => { node.nodeValue = text; });
+      originals = []; translatedLang = '';
+      document.querySelector('main')?.removeAttribute('lang');
+      restoreBtn.hidden = true; trStatus.textContent = 'Showing the original page.';
+    };
+    restoreBtn.addEventListener('click', restore);
+
+    trForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const language = langSel.value; const code = langSel.selectedOptions[0].dataset.code ?? '';
+      if (originals.length) restore();
+      const nodes = collect();
+      if (!nodes.length) { trStatus.textContent = 'Nothing to translate on this page.'; return; }
+      const cacheKey = `st-tr:${location.pathname}:${language}:${nodes.length}`;
+      let result: string[] | null = null;
+      try { result = JSON.parse(sessionStorage.getItem(cacheKey) ?? 'null'); } catch { /* ignore */ }
+      const texts = nodes.map((n) => (n.nodeValue ?? '').trim());
+      if (!result) {
+        result = [];
+        // batches of up to 40 strings / ~3500 characters
+        const batches: number[][] = []; let cur: number[] = []; let size = 0;
+        texts.forEach((t, i) => { if (cur.length >= 40 || size + t.length > 3500) { batches.push(cur); cur = []; size = 0; } cur.push(i); size += t.length; });
+        if (cur.length) batches.push(cur);
+        for (let b = 0; b < batches.length; b++) {
+          trStatus.textContent = `Translating to ${language}… (${b + 1}/${batches.length})`;
+          const r = await post({ mode: 'translate', language, strings: batches[b].map((i) => texts[i]) });
+          if (!r.translations) { trStatus.textContent = r.error ?? 'Translation failed. Please try again.'; return; }
+          batches[b].forEach((i, k) => { result![i] = r.translations![k]; });
+        }
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(result)); } catch { /* storage full */ }
+      }
+      nodes.forEach((n, i) => {
+        const orig = n.nodeValue ?? ''; originals.push({ node: n, text: orig });
+        const lead = orig.match(/^\s*/)![0]; const trail = orig.match(/\s*$/)![0];
+        if (result![i]) n.nodeValue = lead + result![i] + trail;
+      });
+      translatedLang = language;
+      document.querySelector('main')?.setAttribute('lang', code);
+      restoreBtn.hidden = false;
+      trStatus.textContent = `This page is now shown in ${language} (AI translation). Header and footer stay in English.`;
+      dlg.close();
+    });
+
+    // Opened from the Ctrl+K palette with a typed question
+    addEventListener('ask-ai', ((e: CustomEvent<{ q: string }>) => {
+      openPanel(); select('ask'); if (e.detail?.q) sendChat(e.detail.q);
+    }) as EventListener);
+  }
+</script>

@@ -1,0 +1,32 @@
+---
+/** Breadcrumbs for business and product pages (architecture §2.3). */
+import type { NavLink } from '../../lib/site';
+
+interface Props {
+  items: NavLink[];
+  class?: string;
+}
+
+const { items, class: className } = Astro.props;
+---
+
+<nav aria-label="Breadcrumb" class:list={['text-sm', className]}>
+  <ol class="flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-500">
+    {
+      items.map((item, i) => (
+        <li class="flex items-center gap-2">
+          {i > 0 && <span aria-hidden="true">/</span>}
+          {i === items.length - 1 ? (
+            <span aria-current="page" class="font-medium text-navy-900">
+              {item.label}
+            </span>
+          ) : (
+            <a href={item.href} class="inline-flex min-h-6 items-center text-ink-600 hover:text-teal-700">
+              {item.label}
+            </a>
+          )}
+        </li>
+      ))
+    }
+  </ol>
+</nav>

@@ -1,0 +1,32 @@
+---
+/**
+ * Home §6 Technology Services: a planned vertical, framed honestly (architecture §3).
+ * No contact CTA until the founders approve accepting enquiries (company-vision §10 item 2).
+ */
+import { getCollection, getEntry } from 'astro:content';
+import SectionHeading from '../ui/SectionHeading.astro';
+import StatusBadge from '../ui/StatusBadge.astro';
+import TextLink from '../ui/TextLink.astro';
+import ServiceGrid from '../cards/ServiceGrid.astro';
+
+const business = await getEntry('businesses', 'technology-services');
+if (!business) throw new Error('TechnologyServices: missing businesses/technology-services entry.');
+const services = (await getCollection('services', ({ data }) => data.business.id === business.id))
+  .sort((a, b) => a.data.order - b.data.order)
+  .map((s) => ({ id: s.id, name: s.data.name }));
+const status = business.data.status === 'active' ? undefined : business.data.status;
+---
+
+<section aria-labelledby="services-title" class="bg-mist py-20 lg:py-28">
+  <div class="container-site" data-reveal>
+    <SectionHeading
+      id="services-title"
+      eyebrow="Technology & Consulting Services"
+      title="Engineering and consulting, planned"
+      intro="We plan to offer engineering and consulting for organisations that want to build with modern technology. These services are not launched yet."
+    />
+    {status && <StatusBadge status={status} class="mt-5" />}
+    <div class="mt-12"><ServiceGrid services={services} /></div>
+    <p class="mt-10"><TextLink href={`/businesses/${business.id}`}>About this planned vertical</TextLink></p>
+  </div>
+</section>

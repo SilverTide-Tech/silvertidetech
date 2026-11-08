@@ -1,0 +1,42 @@
+---
+/**
+ * Founders & Directors grid, shared by the home and Leadership pages. A wrapping flex row so the last
+ * card centres when a row is incomplete (2 + 2 + 1 on mobile, 3 + 2 on tablet, 5 across on desktop).
+ * Cards rise in one after another (60 ms apart) when the surrounding [data-reveal] block enters view.
+ */
+import { getCollection } from 'astro:content';
+import FounderCard from './FounderCard.astro';
+
+interface Props {
+  /** Load photos eagerly when the grid is above the fold (Leadership page). */
+  eager?: boolean;
+  class?: string;
+}
+
+const { eager = false, class: className } = Astro.props;
+const people = (await getCollection('people', ({ data }) => data.group === 'founders-directors')).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+---
+
+<ul
+  class:list={[
+    'flex flex-wrap justify-center gap-4 sm:gap-5',
+    '*:w-[calc((100%-1rem)/2)] sm:*:w-[calc((100%-2.5rem)/3)] lg:*:w-[calc((100%-5rem)/5)]',
+    className,
+  ]}
+  data-stagger
+>
+  {
+    people.map((person, i) => (
+      <FounderCard
+        name={person.data.name}
+        designation={person.data.designation}
+        photo={person.data.photo}
+        photoPosition={person.data.photoPosition}
+        index={i}
+        eager={eager}
+      />
+    ))
+  }
+</ul>

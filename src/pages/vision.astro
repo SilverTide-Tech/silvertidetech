@@ -1,0 +1,64 @@
+---
+/** Vision & Roadmap (architecture §4, Story template): vision, Now/Next/Later, education phases, future ventures. */
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/layout/PageHero.astro';
+import SectionHeading from '../components/ui/SectionHeading.astro';
+import Button from '../components/ui/Button.astro';
+import PointGrid from '../components/cards/PointGrid.astro';
+import RoadmapTimeline from '../components/cards/RoadmapTimeline.astro';
+import { STATEMENTS } from '../lib/site';
+import { EDUCATION_AMBITION, FUTURE_VENTURES, HORIZONS } from '../lib/company';
+
+const vision = STATEMENTS.find((s) => s.label === 'Vision')!;
+const steps = (await getCollection('roadmap', ({ data }) => data.business.id === 'education'))
+  .sort((a, b) => a.data.phase - b.data.phase)
+  .map((r) => ({ phase: r.data.phase, title: r.data.title, description: r.data.description, status: r.data.status }));
+---
+
+<BaseLayout title="Vision & Roadmap" description={`${vision.text} Where Silver Tide Tech is heading, now, next and later.`}>
+  <PageHero
+    eyebrow="Vision & Roadmap"
+    title={vision.text}
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Vision & Roadmap', href: '/vision' }]}
+  />
+
+  <section aria-labelledby="direction-title" class="py-16 lg:py-24">
+    <div class="container-site" data-reveal>
+      <SectionHeading
+        id="direction-title"
+        eyebrow="Long-term direction"
+        title="Now, next and later"
+        intro="We don’t publish dates until they are set. Everything beyond today is a plan, and is labelled that way."
+      />
+      <div class="mt-10">
+        <PointGrid items={HORIZONS.map((h) => ({ title: h.label, text: h.text }))} labelStyle />
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="education-title" class="bg-mist py-16 lg:py-24">
+    <div class="container-site" data-reveal>
+      <SectionHeading
+        id="education-title"
+        eyebrow="Education ecosystem roadmap"
+        title="From AI for teachers to an integrated ecosystem"
+        intro={`Our long-term ambition: ${EDUCATION_AMBITION.charAt(0).toLowerCase()}${EDUCATION_AMBITION.slice(1)}`}
+      />
+      <div class="mt-12"><RoadmapTimeline steps={steps} /></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="ventures-title" class="py-16 lg:py-24">
+    <div class="container-site grid gap-6 lg:grid-cols-[1fr_1.4fr] lg:gap-16" data-reveal>
+      <SectionHeading id="ventures-title" eyebrow="Future ventures" title="Built to grow" />
+      <div class="grid content-start gap-6">
+        <p class="text-lead">{FUTURE_VENTURES}</p>
+        <div class="flex flex-wrap gap-3">
+          <Button href="/contact" arrow>Contact us</Button>
+          <Button href="/careers" variant="secondary">Explore careers</Button>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

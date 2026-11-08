@@ -1,0 +1,177 @@
+---
+/**
+ * Phase 1 design-system reference (not part of the public sitemap; noindex).
+ * Renders the tokens and components from src/ and proves the content collections load.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Logo from '../components/brand/Logo.astro';
+import Button from '../components/ui/Button.astro';
+import TextLink from '../components/ui/TextLink.astro';
+import StatusBadge from '../components/ui/StatusBadge.astro';
+import SectionHeading from '../components/ui/SectionHeading.astro';
+import Breadcrumbs from '../components/ui/Breadcrumbs.astro';
+import { STATUSES, STATUS_META, compareByStatusThenOrder } from '../lib/status';
+
+const colours = [
+  { name: 'Tide Navy', token: 'navy-900', hex: '#0B1F3A' },
+  { name: 'Navy 800', token: 'navy-800', hex: '#12294A' },
+  { name: 'Navy 700', token: 'navy-700', hex: '#1D3A5F' },
+  { name: 'Sea Teal', token: 'teal-500', hex: '#14B3A8' },
+  { name: 'Deep Teal', token: 'teal-700', hex: '#0B7C77' },
+  { name: 'Teal Light', token: 'teal-300', hex: '#5FE3D6' },
+  { name: 'Silver Grey', token: 'silver-500', hex: '#A9B4C2' },
+  { name: 'Silver 300', token: 'silver-300', hex: '#C9D2DD' },
+  { name: 'Silver 200', token: 'silver-200', hex: '#DFE5EC' },
+  { name: 'Mist', token: 'mist', hex: '#F4F6F9' },
+  { name: 'Ink 600 (body)', token: 'ink-600', hex: '#475467' },
+  { name: 'Ink 700', token: 'ink-700', hex: '#334155' },
+];
+
+const type = [
+  { token: 'text-display', cls: 'text-display font-bold text-navy-900 font-display', sample: 'Building Technology.' },
+  { token: 'text-h1', cls: 'text-h1 font-bold text-navy-900 font-display', sample: 'Founders & Directors' },
+  { token: 'text-h2', cls: 'text-h2 font-bold text-navy-900 font-display', sample: 'What we build' },
+  { token: 'text-h3', cls: 'text-h3 font-semibold text-navy-900 font-display', sample: 'AI Teaching Assistant' },
+  { token: 'text-lead', cls: 'text-lead text-ink-700', sample: 'Technology that makes people’s lives, work and opportunities better.' },
+  { token: 'text-body', cls: 'text-body', sample: 'We build meaningful technology products and solutions that empower people, simplify work and create long-term value.' },
+  { token: 'eyebrow', cls: 'eyebrow text-teal-700', sample: 'Technology & Innovation Company' },
+];
+
+const [businesses, products, services, roadmap, people] = await Promise.all([
+  getCollection('businesses'),
+  getCollection('products'),
+  getCollection('services'),
+  getCollection('roadmap'),
+  getCollection('people'),
+]);
+
+const contentRows = [
+  {
+    label: 'Businesses',
+    items: businesses
+      .map((b) => ({ name: b.data.name, status: b.data.status === 'active' ? undefined : b.data.status, order: b.data.order }))
+      .sort(compareByStatusThenOrder),
+  },
+  { label: 'Products', items: products.map((p) => ({ name: p.data.name, status: p.data.status, order: p.data.order })) },
+  {
+    label: 'Services',
+    items: services.map((s) => ({ name: s.data.name, status: s.data.status, order: s.data.order })).sort((a, b) => a.order - b.order),
+  },
+  {
+    label: 'Education roadmap',
+    items: roadmap
+      .map((r) => ({ name: `Phase ${r.data.phase}: ${r.data.title}`, status: r.data.status, order: r.data.phase }))
+      .sort((a, b) => a.order - b.order),
+  },
+  {
+    label: 'Founders & Directors',
+    items: people.map((p) => ({ name: p.data.name, status: undefined, order: p.data.order })).sort((a, b) => a.order - b.order),
+  },
+];
+---
+
+<BaseLayout title="Design foundation" noindex>
+  <div class="container-site py-16 lg:py-24">
+    <SectionHeading
+      as="h1"
+      eyebrow="Phase 1 · Foundation"
+      title="Design foundation"
+      intro="Tokens, components and content collections implemented from the approved brand direction and architecture. Internal reference page; not in the public sitemap."
+    />
+
+    <section class="mt-20" aria-labelledby="logo-h">
+      <h2 id="logo-h" class="text-h3 font-semibold">Logo</h2>
+      <div class="mt-6 grid gap-6 md:grid-cols-2">
+        <div class="grid min-h-44 place-items-center rounded-[var(--radius-card)] border border-silver-200 p-8">
+          <Logo href={null} size="lg" />
+        </div>
+        <div class="grid min-h-44 place-items-center rounded-[var(--radius-card)] bg-navy-900 p-8" data-tone="dark">
+          <Logo href={null} size="lg" tone="dark" />
+        </div>
+      </div>
+      <div class="mt-6 flex flex-wrap items-center gap-8 rounded-[var(--radius-card)] bg-navy-900 p-6" data-tone="dark">
+        <Logo href={null} size="sm" tone="dark" />
+        <Logo href={null} size="md" tone="dark" />
+      </div>
+    </section>
+
+    <section class="mt-20" aria-labelledby="colour-h">
+      <h2 id="colour-h" class="text-h3 font-semibold">Colour tokens</h2>
+      <ul class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        {
+          colours.map((c) => (
+            <li class="overflow-hidden rounded-xl border border-silver-200">
+              <div class="h-16" style={`background:${c.hex}`} />
+              <div class="p-3 text-[0.8125rem] leading-snug">
+                <span class="block font-display font-bold text-navy-900">{c.name}</span>
+                <code class="font-mono text-xs text-ink-700">{c.token}</code>
+                <code class="block font-mono text-xs text-ink-500">{c.hex}</code>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="mt-20" aria-labelledby="type-h">
+      <h2 id="type-h" class="text-h3 font-semibold">Type scale</h2>
+      <dl class="mt-6 divide-y divide-silver-200">
+        {
+          type.map((t) => (
+            <div class="grid gap-2 py-4 md:grid-cols-[10rem_1fr] md:items-baseline md:gap-6">
+              <dt class="font-mono text-xs text-ink-500 uppercase">{t.token}</dt>
+              <dd class={t.cls}>{t.sample}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <section class="mt-20" aria-labelledby="buttons-h">
+      <h2 id="buttons-h" class="text-h3 font-semibold">Buttons, links and status</h2>
+      <div class="mt-6 grid gap-6 md:grid-cols-2">
+        <div class="flex flex-wrap items-center gap-3 rounded-[var(--radius-card)] border border-silver-200 p-6 sm:p-8">
+          <Button href="#buttons-h" arrow>Primary</Button>
+          <Button href="https://www.sarastech.co.in" variant="accent" external>Visit SarasTech</Button>
+          <Button href="#buttons-h" variant="secondary">Secondary</Button>
+          <p class="w-full pt-2"><TextLink href="#buttons-h">Learn more</TextLink></p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 rounded-[var(--radius-card)] bg-navy-900 p-6 sm:p-8" data-tone="dark">
+          <Button href="#buttons-h" tone="dark" arrow>Primary</Button>
+          <Button href="#buttons-h" tone="dark" variant="accent">Accent</Button>
+          <Button href="#buttons-h" tone="dark" variant="secondary">Secondary</Button>
+          <p class="w-full pt-2"><TextLink href="#buttons-h">Read more</TextLink></p>
+        </div>
+      </div>
+      <div class="mt-6 flex flex-wrap gap-2.5">
+        {STATUSES.map((s) => <StatusBadge status={s} />)}
+      </div>
+      <Breadcrumbs class="mt-8" items={[{ label: 'Home', href: '/' }, { label: 'Products', href: '/products' }, { label: 'SarasTech', href: '/products/sarastech' }]} />
+    </section>
+
+    <section class="mt-20" aria-labelledby="content-h">
+      <h2 id="content-h" class="text-h3 font-semibold">Content collections (loaded at build time)</h2>
+      <div class="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {
+          contentRows.map((row) => (
+            <div class="rounded-[var(--radius-card)] border border-silver-200 p-6">
+              <h3 class="eyebrow text-ink-500">{row.label}</h3>
+              <ul class="mt-3 divide-y divide-silver-200 text-[0.9375rem]">
+                {row.items.map((i) => (
+                  <li class="flex items-center justify-between gap-3 py-2.5">
+                    <span class="text-navy-900">{i.name}</span>
+                    {i.status && <StatusBadge status={i.status} />}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+      </div>
+      <p class="mt-4 text-sm text-ink-500">
+        Status labels: {STATUSES.map((s) => STATUS_META[s].label).join(' · ')}.
+      </p>
+    </section>
+  </div>
+</BaseLayout>

@@ -1,0 +1,60 @@
+---
+/** About (architecture §4, Story template): positioning, vision/mission/purpose, pillars, founders link. */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/layout/PageHero.astro';
+import SectionHeading from '../components/ui/SectionHeading.astro';
+import Button from '../components/ui/Button.astro';
+import StatementGrid from '../components/cards/StatementGrid.astro';
+import PointGrid from '../components/cards/PointGrid.astro';
+import CtaBand from '../components/cards/CtaBand.astro';
+import { SITE, STATEMENTS } from '../lib/site';
+import { IDENTITY_POINTS, PILLARS } from '../lib/company';
+---
+
+<BaseLayout title="About" description={SITE.description}>
+  <PageHero
+    eyebrow={SITE.identity}
+    title="About Silver Tide Tech"
+    intro={SITE.description}
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'About', href: '/about' }]}
+  />
+
+  <section aria-labelledby="who-title" class="py-16 lg:py-24">
+    <div class="container-site" data-reveal>
+      <SectionHeading
+        id="who-title"
+        eyebrow="Who we are"
+        title="A product-led technology company"
+        intro="Education is our first major vertical, but Silver Tide Tech is not an education-only company. The parent brand is built to support future products, businesses and industries."
+      />
+      <div class="mt-10"><PointGrid items={IDENTITY_POINTS} /></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="statements-title" class="bg-navy-900 py-16 lg:py-24" data-tone="dark">
+    <div class="container-site" data-reveal>
+      <SectionHeading id="statements-title" eyebrow="Why we build" title="Vision, mission and purpose" tone="dark" />
+      <div class="mt-10"><StatementGrid items={STATEMENTS} /></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="believe-title" class="py-16 lg:py-24">
+    <div class="container-site" data-reveal>
+      <SectionHeading id="believe-title" eyebrow="What we believe" title="The principles behind our work" />
+      <div class="mt-10"><PointGrid items={PILLARS} columns={4} /></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="people-title" class="bg-mist py-16 lg:py-20">
+    <div class="container-site grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end" data-reveal>
+      <SectionHeading id="people-title" eyebrow="Leadership" title="Founders & Directors" intro="The people building Silver Tide Tech." />
+      <Button href="/leadership" arrow class="justify-self-start lg:justify-self-end">Meet the founders</Button>
+    </div>
+  </section>
+
+  <section aria-label="Contact" class="py-16 lg:py-24">
+    <div class="container-site" data-reveal>
+      <CtaBand title="Let’s talk" text="Have an idea, a question or a project in mind?" href="/contact" label="Contact us" />
+    </div>
+  </section>
+</BaseLayout>

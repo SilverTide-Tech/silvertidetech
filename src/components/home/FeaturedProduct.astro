@@ -1,0 +1,87 @@
+---
+/**
+ * Home §3 Featured Product: SarasTech (architecture §3). Facts come from the product entry.
+ * The visual is the complete supplied product image in a container matching its 1536:1024 ratio
+ * (object-fit: contain): never cropped, stretched or zoomed. On desktop it is centred in the navy column. Products without an image fall back to the abstract brand panel; no fake UI.
+ */
+import { getCollection } from 'astro:content';
+import { Picture } from 'astro:assets';
+import SectionHeading from '../ui/SectionHeading.astro';
+import StatusBadge from '../ui/StatusBadge.astro';
+import Button from '../ui/Button.astro';
+import TextLink from '../ui/TextLink.astro';
+
+const [product] = (await getCollection('products', ({ data }) => data.featured)).sort((a, b) => a.data.order - b.data.order);
+if (!product) throw new Error('FeaturedProduct: no product has `featured: true`.');
+const p = product.data;
+
+const contour = Array.from({ length: 11 }, (_, i) => {
+  const y = 24 + i * 36;
+  let d = '';
+  for (let x = 0; x <= 600; x += 10) d += `${x === 0 ? 'M' : 'L'}${x} ${(y + (5 + (i % 3) * 2) * Math.sin(((x + i * 30) / 140) * Math.PI * 2)).toFixed(1)}`;
+  return { d, accent: i === 8 };
+});
+---
+
+<section aria-labelledby="featured-title" class="relative overflow-hidden bg-mist py-20 lg:py-28">
+  <div class="container-site" data-reveal>
+    <SectionHeading eyebrow="Featured product" title="Built for teachers, available today" id="featured-title" />
+
+    <article aria-labelledby="product-title" class="mt-12 grid overflow-hidden rounded-[20px] border border-silver-200 bg-white shadow-[0_40px_80px_-50px_rgba(11,31,58,0.55)] xl:grid-cols-[1fr_1.08fr]">
+      <div class="grid content-start gap-5 p-7 sm:p-11">
+        <StatusBadge status={p.status} class="justify-self-start" />
+        <div>
+          <h3 id="product-title" class="text-[clamp(1.875rem,1.5rem+1.4vw,2.5rem)] font-extrabold tracking-[-0.03em]">{p.name}</h3>
+          <p class="mt-1 font-display text-lg font-semibold text-ink-700">{p.tagline}</p>
+        </div>
+        <p>{p.summary}</p>
+        <div>
+          <h4 class="sr-only">Current capabilities</h4>
+          <ul class="flex flex-wrap gap-2">
+            {
+              p.capabilities.map((c) => (
+                <li class="rounded-full border border-silver-200 bg-mist px-3 py-1.5 text-[0.84375rem] font-medium text-navy-900">{c.title}</li>
+              ))
+            }
+          </ul>
+        </div>
+        <div class="mt-2 flex flex-wrap items-center gap-x-6 gap-y-3">
+          {p.externalUrl && <Button href={p.externalUrl} variant="accent" external>Visit {p.name}</Button>}
+          <TextLink href={`/products/${product.id}`}>Learn more</TextLink>
+        </div>
+      </div>
+
+      {
+        p.image ? (
+          <div class="relative grid place-items-center overflow-hidden bg-navy-900" data-tone="dark">
+            <div class="showcase-glow absolute inset-0" aria-hidden="true"></div>
+            <div class="tilt relative aspect-[1536/1024] w-full" data-tilt>
+              <Picture
+                src={p.image}
+                alt={p.imageAlt ?? ''}
+                formats={['avif', 'webp']}
+                fallbackFormat="jpg"
+                widths={[480, 720, 960, 1200, 1536]}
+                sizes="(min-width: 1280px) 622px, (min-width: 1264px) 1200px, calc(100vw - 48px)"
+                quality={80}
+                class="block h-full w-full object-contain"
+              />
+            </div>
+          </div>
+        ) : (
+          <div class="relative grid min-h-72 place-items-center overflow-hidden bg-navy-900 p-10" data-tone="dark" aria-hidden="true">
+            <svg class="absolute inset-0 h-full w-full" viewBox="0 0 600 420" preserveAspectRatio="xMidYMid slice" focusable="false">
+              {contour.map((l) => (
+                <path d={l.d} fill="none" stroke={l.accent ? '#14B3A8' : '#A9B4C2'} stroke-opacity={l.accent ? 0.8 : 0.22} stroke-width="1.3" />
+              ))}
+            </svg>
+            <div class="relative text-center">
+              <p class="font-display text-[clamp(2.5rem,2rem+2vw,3.5rem)] font-extrabold tracking-[-0.03em] text-white">{p.name}</p>
+              <p class="eyebrow mt-3 text-teal-300">{p.category}</p>
+            </div>
+          </div>
+        )
+      }
+    </article>
+  </div>
+</section>

@@ -1,0 +1,15 @@
+---
+/** Home §4 Our Vision and Mission: verbatim statements (company-vision §2). */
+import SectionHeading from '../ui/SectionHeading.astro';
+import TextLink from '../ui/TextLink.astro';
+import StatementGrid from '../cards/StatementGrid.astro';
+import { STATEMENTS } from '../../lib/site';
+---
+
+<section aria-labelledby="vision-title" class="bg-navy-900 py-20 lg:py-28" data-tone="dark">
+  <div class="container-site" data-reveal>
+    <SectionHeading id="vision-title" eyebrow="Why we build" title="Our vision and mission" tone="dark" />
+    <div class="mt-12"><StatementGrid items={STATEMENTS} /></div>
+    <p class="mt-8"><TextLink href="/about">More about Silver Tide Tech</TextLink></p>
+  </div>
+</section>

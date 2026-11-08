@@ -1,0 +1,43 @@
+---
+/**
+ * Careers (architecture §4, Careers template). No open roles are confirmed, so the roles list shows
+ * the documented empty state (architecture §6.3) and routes candidates to the contact form.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/layout/PageHero.astro';
+import SectionHeading from '../components/ui/SectionHeading.astro';
+import Button from '../components/ui/Button.astro';
+import PointGrid from '../components/cards/PointGrid.astro';
+import { PILLARS } from '../lib/company';
+---
+
+<BaseLayout title="Careers" description="Build with Silver Tide Tech: how we work and how to get in touch.">
+  <PageHero
+    eyebrow="Careers"
+    title="Build with us"
+    intro="We’re building for the long term, and we’re always glad to hear from people who want to build with us."
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Careers', href: '/careers' }]}
+  />
+
+  <section aria-labelledby="values-title" class="py-16 lg:py-24">
+    <div class="container-site" data-reveal>
+      <SectionHeading id="values-title" eyebrow="What guides us" title="The principles behind our work" />
+      <div class="mt-10"><PointGrid items={PILLARS} columns={4} /></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="roles-title" class="bg-mist py-16 lg:py-24">
+    <div class="container-site grid gap-8 lg:grid-cols-[1fr_1.4fr] lg:gap-16" data-reveal>
+      <SectionHeading id="roles-title" eyebrow="Open roles" title="Current openings" />
+      <div class="grid content-start gap-6">
+        <div class="rounded-[var(--radius-card)] border border-silver-200 bg-white p-6 sm:p-8">
+          <p class="text-lead text-navy-900">We’re not hiring for specific roles right now, but we’d love to hear from you.</p>
+          <p class="mt-3">
+            Tell us about yourself and the kind of work you’d like to do. Choose the “Careers” topic on the contact form.
+          </p>
+        </div>
+        <Button href="/contact?topic=careers" arrow class="justify-self-start">Write to us</Button>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

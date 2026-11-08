@@ -1,0 +1,58 @@
+---
+/**
+ * Roadmap steps on a rising tide line (brand-direction §8.5). Reusable on Education and Vision pages.
+ * The launched step is solid teal; planned steps are silver outlines.
+ */
+import StatusBadge from '../ui/StatusBadge.astro';
+import type { Status } from '../../lib/status';
+
+interface Step {
+  phase: number;
+  title: string;
+  description: string;
+  status: Status;
+}
+
+interface Props {
+  steps: Step[];
+  headingLevel?: 'h3' | 'h4';
+}
+
+const { steps, headingLevel: Heading = 'h3' } = Astro.props;
+const lift = ['xl:mt-9', 'xl:mt-6', 'xl:mt-3', 'xl:mt-0'];
+---
+
+<div class="relative">
+  <svg
+    class="absolute inset-x-0 top-0 hidden h-[70px] w-full xl:block"
+    viewBox="0 0 1200 70"
+    preserveAspectRatio="none"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path d="M0 62 C 200 64, 300 40, 450 44 S 750 30, 900 22 S 1100 8, 1200 6" fill="none" stroke="#C9D2DD" stroke-width="2" stroke-dasharray="4 6" vector-effect="non-scaling-stroke"></path>
+    <path d="M0 62 C 120 63, 200 56, 300 50" fill="none" stroke="#14B3A8" stroke-width="3" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
+  </svg>
+
+  <ol class="relative grid gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-5 xl:pt-10">
+    {
+      steps.map((step, i) => {
+        const live = step.status !== 'planned' && step.status !== 'in-development';
+        return (
+          <li
+            class:list={[
+              'grid content-start gap-2.5 rounded-[14px] border bg-white p-6',
+              live ? 'roadmap-live border-teal-500 shadow-[inset_0_3px_0_var(--color-teal-500)]' : 'border-silver-200',
+              lift[i] ?? '',
+            ]}
+          >
+            <span class="font-mono text-xs tracking-[0.08em] text-ink-500">PHASE {String(step.phase).padStart(2, '0')}</span>
+            <Heading class="text-[1.1875rem] leading-snug font-semibold">{step.title}</Heading>
+            <p class="text-[0.9375rem]">{step.description}</p>
+            <StatusBadge status={step.status} class="mt-1 justify-self-start" />
+          </li>
+        );
+      })
+    }
+  </ol>
+</div>

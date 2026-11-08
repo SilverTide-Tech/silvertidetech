@@ -1,0 +1,28 @@
+---
+/** Vision / mission / purpose statements in a joined grid (used on Home and About). */
+interface Props {
+  items: ReadonlyArray<{ label: string; text: string }>;
+  tone?: 'light' | 'dark';
+}
+
+const { items, tone = 'dark' } = Astro.props;
+const dark = tone === 'dark';
+---
+
+<dl
+  class:list={[
+    'grid gap-px overflow-hidden rounded-[var(--radius-card)] border md:grid-cols-3',
+    dark ? 'border-navy-700 bg-navy-700' : 'border-silver-200 bg-silver-200',
+  ]}
+>
+  {
+    items.map((s) => (
+      <div class:list={['p-7 sm:p-9', dark ? 'bg-navy-900' : 'bg-white']}>
+        <dt class:list={['eyebrow', dark ? 'text-teal-300' : 'text-teal-700']}>{s.label}</dt>
+        <dd class:list={['mt-4 font-display text-[1.375rem] leading-snug font-semibold', dark ? 'text-white' : 'text-navy-900']}>
+          {s.text}
+        </dd>
+      </div>
+    ))
+  }
+</dl>

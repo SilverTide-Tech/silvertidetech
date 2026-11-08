@@ -1,0 +1,109 @@
+---
+/**
+ * Global header (brand-direction §9, architecture §2.1).
+ * Desktop nav from 1024 px; menu button below. Hides on scroll down, returns on scroll up.
+ */
+import Logo from '../brand/Logo.astro';
+import Button from '../ui/Button.astro';
+import NavDropdown from '../react/NavDropdown';
+import MobileMenu from '../react/MobileMenu';
+import { getNavigation } from '../../lib/navigation';
+import { PRIMARY_LINKS, SITE, isCurrentPath } from '../../lib/site';
+import { getImage } from 'astro:assets';
+import markAsset from '../../assets/brand/mark.png';
+
+const markImage = await getImage({ src: markAsset, width: 56, height: 56, format: 'webp' });
+
+const nav = await getNavigation();
+const path = Astro.url.pathname;
+const current = (href: string) => isCurrentPath(path, href);
+
+const { home, about, leadership, careers, contact } = PRIMARY_LINKS;
+const simpleLinks = [about, leadership, careers];
+
+const mobileItems = [
+  { link: home, current: current(home.href) },
+  { group: nav.businesses, current: current(nav.businesses.href) },
+  { group: nav.products, current: current(nav.products.href) },
+  ...simpleLinks.map((link) => ({ link, current: current(link.href) })),
+];
+---
+
+<header
+  id="site-header"
+  class="sticky top-0 z-50 border-b border-transparent bg-white/95 transition-[transform,background-color,border-color] duration-[250ms] ease-[var(--ease-tide)] data-[hidden=true]:-translate-y-full data-[scrolled=true]:border-silver-200 data-[scrolled=true]:bg-white/85 data-[scrolled=true]:backdrop-blur-md"
+>
+  <div class="container-site flex h-[4.5rem] items-center justify-between gap-6 lg:h-[4.75rem]">
+    <Logo eager />
+
+    <nav aria-label="Primary" class="hidden items-center gap-7 lg:flex">
+      <ul class="flex items-center gap-7">
+        <li>
+          <a
+            href={home.href}
+            aria-current={current(home.href) ? 'page' : undefined}
+            class:list={[
+              'py-1.5 text-[0.9375rem] font-medium transition-colors hover:text-teal-700',
+              current(home.href) ? 'nav-active-stroke text-teal-700' : 'text-navy-900',
+            ]}>{home.label}</a
+          >
+        </li>
+        <li><NavDropdown client:idle group={nav.businesses} current={current(nav.businesses.href)} /></li>
+        <li><NavDropdown client:idle group={nav.products} current={current(nav.products.href)} /></li>
+        {
+          simpleLinks.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                aria-current={current(link.href) ? 'page' : undefined}
+                class:list={[
+                  'py-1.5 text-[0.9375rem] font-medium transition-colors hover:text-teal-700',
+                  current(link.href) ? 'nav-active-stroke text-teal-700' : 'text-navy-900',
+                ]}
+              >
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <Button href={contact.href} size="sm">{contact.label}</Button>
+    </nav>
+
+    <div class="lg:hidden">
+      <MobileMenu client:media="(max-width: 1023.98px)" items={mobileItems} contact={contact} homeLabel={SITE.name} markSrc={markImage.src} />
+    </div>
+  </div>
+</header>
+
+<script>
+  // Hide on scroll down, reveal on scroll up; add border/blur after leaving the top.
+  const header = document.getElementById('site-header');
+  if (header) {
+    let lastY = window.scrollY;
+    let ticking = false;
+    const update = () => {
+      const y = window.scrollY;
+      const menuOpen = document.documentElement.style.overflow === 'hidden';
+      const focusInside = header.contains(document.activeElement);
+      header.dataset.scrolled = String(y > 8);
+      if (!menuOpen && !focusInside && y > 160 && y > lastY + 4) header.dataset.hidden = 'true';
+      else if (y < lastY - 4 || y <= 160) header.dataset.hidden = 'false';
+      lastY = y;
+      ticking = false;
+    };
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (!ticking) {
+          requestAnimationFrame(update);
+          ticking = true;
+        }
+      },
+      { passive: true },
+    );
+    // Keyboard users tabbing into a hidden header must always see it.
+    header.addEventListener('focusin', () => (header.dataset.hidden = 'false'));
+    update();
+  }
+</script>

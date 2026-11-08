@@ -1,0 +1,81 @@
+---
+/**
+ * The founders' note, /leadership/founders-note: a long-form reading page for the joint note from the
+ * Founders & Directors. Built only once the note is published (src/content/notes/founders-note.md);
+ * every word of it is founder-supplied.
+ */
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/layout/PageHero.astro';
+import FounderPortraits from '../../components/cards/FounderPortraits.astro';
+import CtaBand from '../../components/cards/CtaBand.astro';
+import TextLink from '../../components/ui/TextLink.astro';
+import { getFoundersNote, FOUNDERS_NOTE_ID, FOUNDERS_NOTE_PATH, type FoundersNote } from '../../lib/founders-note';
+import { listNames } from '../../lib/notes';
+import { articleSchema } from '../../lib/seo';
+
+export async function getStaticPaths() {
+  const note = await getFoundersNote();
+  return note ? [{ params: { note: FOUNDERS_NOTE_ID }, props: { note } }] : [];
+}
+
+interface Props {
+  note: FoundersNote;
+}
+
+const { note } = Astro.props;
+const { Content } = await render(note.entry);
+const authorNames = note.authors.map((a) => a.data.name);
+const names = listNames(authorNames);
+const isoDate = note.published.toISOString().slice(0, 10);
+const displayDate = note.published.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+---
+
+<BaseLayout
+  title={note.title}
+  description={note.description}
+  structuredData={[articleSchema({ headline: note.title, description: note.description, datePublished: note.published, authors: authorNames }, FOUNDERS_NOTE_PATH, Astro.site)]}
+>
+  <PageHero
+    eyebrow="Leadership"
+    title={note.title}
+    breadcrumbs={[
+      { label: 'Home', href: '/' },
+      { label: 'Leadership', href: '/leadership' },
+      { label: note.title, href: FOUNDERS_NOTE_PATH },
+    ]}
+  />
+
+  <article aria-labelledby="page-title" class="py-16 lg:py-24">
+    <div class="container-site">
+      <div class="mx-auto max-w-[68ch]">
+        <div class="flex flex-col gap-4 border-b border-silver-200 pb-8 sm:flex-row sm:items-center">
+          <FounderPortraits people={note.authors} />
+          <p class="text-sm text-ink-500">
+            <span class="block font-semibold text-navy-900">{names}</span>
+            Founders &amp; Directors · <time datetime={isoDate}>{displayDate}</time>
+          </p>
+        </div>
+
+        <div
+          class="mt-10 grid gap-6 text-[1.125rem] leading-[1.75] text-ink-700 [&_a]:font-medium [&_a]:text-teal-700 [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-2 [&_blockquote]:border-teal-500 [&_blockquote]:pl-5 [&_blockquote]:font-display [&_blockquote]:text-[1.25rem] [&_blockquote]:font-semibold [&_blockquote]:text-navy-900 [&_h2]:mt-6 [&_h2]:text-h3 [&_h2]:font-bold [&_h2]:text-navy-900 [&_li]:ml-5 [&_li]:pl-1 [&_li+li]:mt-2 [&_ol]:list-decimal [&_strong]:font-semibold [&_strong]:text-navy-900 [&_ul]:list-disc"
+        >
+          <Content />
+        </div>
+
+        <p class="mt-12 border-t border-silver-200 pt-8"><TextLink href="/leadership">Back to Leadership</TextLink></p>
+      </div>
+    </div>
+  </article>
+
+  <section aria-label="Careers" class="pb-16 lg:pb-24">
+    <div class="container-site" data-reveal>
+      <CtaBand
+        title="Build with us"
+        text="We’re building for the long term, and we’re always glad to hear from people who want to build with us."
+        href="/careers"
+        label="Explore careers"
+      />
+    </div>
+  </section>
+</BaseLayout>

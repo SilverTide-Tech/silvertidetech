@@ -1,0 +1,53 @@
+---
+/**
+ * Inner-page hero. Navy with a static tide contour: the animated tide field is reserved
+ * for the home page (one ambient effect per site, brand-direction §10.2).
+ * Slot: actions (buttons/badges) under the intro.
+ */
+import Breadcrumbs from '../ui/Breadcrumbs.astro';
+import TideStroke from '../ui/TideStroke.astro';
+import type { NavLink } from '../../lib/site';
+import { breadcrumbSchema } from '../../lib/seo';
+
+interface Props {
+  title: string;
+  eyebrow?: string;
+  intro?: string;
+  breadcrumbs?: NavLink[];
+}
+
+const { title, eyebrow, intro, breadcrumbs } = Astro.props;
+const breadcrumbLd = breadcrumbs ? breadcrumbSchema(breadcrumbs, Astro.site) : undefined;
+
+const contour = Array.from({ length: 7 }, (_, i) => {
+  const y = 150 + i * 34;
+  let d = '';
+  for (let x = 0; x <= 1440; x += 16) {
+    d += `${x === 0 ? 'M' : 'L'}${x} ${(y + (8 + (i % 3) * 3) * Math.sin(((x + i * 47) / 360) * Math.PI * 2)).toFixed(1)}`;
+  }
+  return { d, accent: i === 2 };
+});
+---
+
+{breadcrumbLd && <script is:inline type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />}
+<section aria-labelledby="page-title" class="relative isolate overflow-hidden bg-navy-900" data-tone="dark">
+  <svg class="absolute inset-0 -z-10 h-full w-full" viewBox="0 0 1440 420" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+    {
+      contour.map((l) => (
+        <path d={l.d} fill="none" stroke={l.accent ? '#14B3A8' : '#A9B4C2'} stroke-opacity={l.accent ? 0.7 : 0.16} stroke-width={l.accent ? 1.6 : 1.1} />
+      ))
+    }
+  </svg>
+  <div class="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-navy-900 from-20% via-navy-900/60 to-navy-900/10" aria-hidden="true"></div>
+
+  <div class="container-site py-16 sm:py-20 lg:py-24">
+    {breadcrumbs && <Breadcrumbs items={breadcrumbs} class="mb-8 [&_a]:text-silver-300 [&_a:hover]:text-white [&_ol]:text-silver-500 [&_[aria-current]]:text-white" />}
+    <div class="max-w-[46rem]">
+      {eyebrow && <p class="eyebrow text-teal-300">{eyebrow}</p>}
+      <TideStroke tone="dark" class="mt-4" />
+      <h1 id="page-title" class="mt-5 text-h1 font-bold text-white">{title}</h1>
+      {intro && <p class="mt-5 text-lead text-silver-300">{intro}</p>}
+      {Astro.slots.has('default') && <div class="mt-8 flex flex-wrap items-center gap-3"><slot /></div>}
+    </div>
+  </div>
+</section>
